@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+motor
+pymongo
+python-dotenv
+bcrypt
+passlib
+python-jose
+python-multipart
+email-validator
+dnspython
+requests
+selfies
+argon2-cffi

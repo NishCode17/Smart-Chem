@@ -1,70 +1,127 @@
 # Smart Chem 🧪
 
-Smart Chem is a deep learning-based project designed for *de novo* molecule generation. It leverages Variational Autoencoders (VAEs) to learn the continuous latent space of chemical structures, enabling the improved generation and optimization of drug-like molecules.
+Smart Chem is a cutting-edge **AI-powered Drug Discovery Platform** designed to accelerate the early stages of pharmaceutical research. By leveraging **Variational Autoencoders (VAEs)** and **Deep Learning**, Smart Chem enables researchers to generate novel drug-like molecules, optimize lead compounds, and analyze their physicochemical properties in real-time.
+
+![Smart Chem Platform](https://placehold.co/1200x600?text=Smart+Chem+Platform+Preview)
+
+---
 
 ## 🚀 Key Features
 
-*   **Dual Representation**: Supports both **SMILES** and **SELFIES** (robust molecular representation) for training.
-*   **Deep Learning Model**: Implements a Variational Autoencoder (VAE) to encode and decode molecular structures.
-*   **Chemical Analysis**: Backend utilities to calculate key drug-discovery metrics:
-    *   **QED** (Quantitative Estimation of Drug-likeness)
-    *   **LogP** (Octanol-water partition coefficient)
-*   **Visualization**: Automatic generation of 2D molecular structure images encoded in Base64 for easy frontend integration.
+### 1. **AI Molecule Generation**
+   - **Random Generation**: Explore the chemical space by generating novel molecules from the VAE's latent space.
+   - **Targeted Generation**: Generate molecules optimized for specific properties like **QED** (Drug-likeness), **LogP** (Lipophilicity), and **SAS** (Synthetic Accessibility).
+
+### 2. **Lead Optimization ("Magic Wand")**
+   - Take an existing lead compound (SMILES) and explore its "neighborhood" in the latent space.
+   - Find structural variations that improve specific metrics while retaining the core scaffold.
+
+### 3. **Virtual Lab**
+   - **ADMET Analysis**: Comprehensive prediction of Absorption, Distribution, Metabolism, Excretion, and Toxicity.
+   - **Lipinski's Rule of 5**: Automatic compliance checking for oral bioavailability.
+   - **3D Visualization**: Interactive 3D molecular viewer (using `3dmol.js`) to inspect steric structures.
+
+### 4. **Design Studio**
+   - A modern, card-based interface to manage generated molecules.
+   - Filter, sort, and compare candidates.
+   - **Project Management**: Organize your research by saving promising candidates into dedicated project folders.
+
+### 5. **Smart Assistant**
+   - An integrated AI assistant to answer queries about chemical properties, synthesis pathways, and general platform usage.
+
+---
+
+## 🛠️ Technology Stack
+
+### **Backend (Python)**
+- **FastAPI**: High-performance API framework.
+- **PyTorch**: Deep learning framework for the VAE and Property Predictors.
+- **RDKit**: Industry-standard cheminformatics library for molecular processing.
+- **SELFIES**: Robust molecular string representation (100% valid strings).
+- **MongoDB**: NoSQL database for flexible storage of projects and molecules.
+
+### **Frontend (TypeScript)**
+- **React (Vite)**: Fast, modern UI library.
+- **Tailwind CSS**: Utility-first styling for a sleek, responsive design.
+- **Shadcn UI**: Accessible and customizable component library.
+- **Framer Motion**: Smooth animations and transitions.
+- **Recharts**: Data visualization for property distribution.
+
+---
+
+## 📦 Installation & Setup
+
+### Prerequisites
+- **Conda** (Anaconda or Miniconda)
+- **Node.js** (v16+) & **npm**
+- **MongoDB** (Running locally or cloud URI)
+
+### 1. Backend Setup
+
+Create and activate the Conda environment:
+
+```bash
+# Create environment from requirements (if file exists) or manually
+conda create -n smartchem python=3.9
+conda activate smartchem
+
+# Install Python dependencies
+pip install -r requirements.txt
+```
+
+Start the Backend Server:
+
+```bash
+# From the root directory
+uvicorn backend.main:app --reload
+```
+*Server runs at `http://localhost:8000`*
+
+### 2. Frontend Setup
+
+Navigate to the frontend directory and install dependencies:
+
+```bash
+cd frontend
+npm install
+```
+
+Start the Frontend Development Server:
+
+```bash
+npm run dev
+```
+*App runs at `http://localhost:8080` (or similar)*
+
+---
 
 ## 📂 Project Structure
 
 ```
 Smart Chem/
-├── backend/            # Backend logic for chemical property calculation & image generation
-│   └── chem_utils.py   # Utilities using RDKit and Selfies
-├── checkpoints/        # Saved model weights during training
-├── data/               # Dataset storage
-│   ├── raw/            # Original CSV datasets (e.g., train_molecules.csv)
-│   └── processed/      # Tokenized tensors and vocabulary files (.pt, .json)
-├── models/             # PyTorch model definitions (VAE)
-├── frontend/           # Frontend application files
-├── preprocess.py       # Script to digest raw CSVs into training tensors
-└── train.py            # Main training loop for the VAE model
+├── backend/                # FastAPI Application & Logic
+│   ├── routers/            # API Endpoints (Auth, Projects, Molecules)
+│   ├── models.py           # Pydantic & DB Models
+│   ├── chem_utils.py       # RDKit & Calculation Utilities
+│   └── main.py             # App Entry Point
+├── frontend/               # React Application
+│   ├── src/
+│   │   ├── components/     # Reusable UI Components
+│   │   ├── pages/          # Main Views (DesignStudio, VirtualLab)
+│   │   └── lib/            # API Client & Utils
+├── data/                   # Dataset Storage
+├── checkpoints/            # Trained VAE & Predictor Models
+└── train.py                # Model Training Script
 ```
 
-## 🛠️ Setup & Usage
-
-### 1. Prerequisites
-Ensure you have the following libraries installed:
-*   Python 3.8+
-*   PyTorch
-*   RDKit
-*   Selfies
-*   Pandas
-*   Tqdm
-
-### 2. Data Preprocessing
-Before training, the raw molecular data (SMILES/SELFIES) must be tokenized and converted into tensors.
-This step:
-*   Filters molecules by length.
-*   Builds a vocabulary mapping.
-*   Saves processed data to `data/processed/`.
-
-```bash
-python preprocess.py
-```
-*Note: Ensure your raw data is placed at `data/raw/train_molecules.csv`.*
-
-### 3. Model Training
-Train the VAE model on the processed data. You can configure hyperparameters (Epochs, Batch Size, Learning Rate) directly in `train.py`.
-
-```bash
-python train.py
-```
-*   **Checkpoints**: Model weights are saved to `checkpoints/` after every few epochs.
-*   **Loss Function**: Uses a combination of Reconstruction Loss (CrossEntropy) and KL Divergence (with annealing).
+---
 
 ## 📊 Data Pipeline
 
-1.  **Input**: Raw CSV with `smiles` and `SELFIES` columns.
-2.  **Processing**: Molecules are tokenized, padded to a fixed length, and mapped to integers.
-3.  **Training**: The VAE learns to map these integer sequences to a latent space and back.
-4.  **Inference**: The trained decoder serves as a generator for new, valid molecules.
+1.  **Input**: Raw SMILES/SELFIES data.
+2.  **Processing**: Tokenization and tensor conversation.
+3.  **Training**: VAE learns to map discrete chemical structures to a continuous latent space.
+4.  **Inference**: The Decoder generates new molecules from latent vectors, which are then validated and analyzed by RDKit.
 
 ---
-*Final Year Project*
+*Created for Final Year Project - Smart Chem Team*

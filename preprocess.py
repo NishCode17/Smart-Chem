@@ -15,7 +15,7 @@ COL_SMILES = "smiles"
 COL_SELFIES = "SELFIES" 
 
 MAX_LEN = 100           
-MVP_LIMIT = 30000       # <--- THIS IS THE LINE YOU ASKED FOR
+MVP_LIMIT = 150000       # <--- THIS IS THE LINE YOU ASKED FOR
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 

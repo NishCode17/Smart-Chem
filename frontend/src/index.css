@@ -1,8 +1,182 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-body {
-  background-color: #f8fafc;
-  /* Light gray background */
+@layer base {
+  :root {
+    /* Professional Biotech SaaS Theme */
+    /* Neutral Dark Navy/Slate Background */
+    --background: 222 47% 11%;
+    /* #0f172a */
+    --foreground: 210 40% 98%;
+    /* #f8fafc */
+
+    /* Cards: Gluish Slate - Lighter than BG */
+    --card: 222 30% 15%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Primary: Professional Corporate Blue (Softer) */
+    --primary: 221 83% 53%;
+    /* #2563eb - Professional Blue */
+    --primary-foreground: 210 40% 98%;
+    /* White text on blue */
+
+    /* Secondary: Muted Slate */
+    --secondary: 217 20% 20%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 20% 20%;
+    --muted-foreground: 215 15% 70%;
+    /* Lighter muted text */
+
+    --accent: 217 30% 20%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 217 15% 20%;
+    --input: 217 33% 20%;
+    --ring: 221 83% 53%;
+
+    --radius: 0.5rem;
+
+    /* Legacy compatibility map */
+    --neon-pink: 221 83% 53%;
+    /* Remap to Primary */
+    --neon-purple: 220 14% 96%;
+    --neon-blue: 221 83% 53%;
+    --deep-space: 222 47% 11%;
+    --glass: 222 30% 15%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-sans font-semibold tracking-tight;
+  }
+}
+
+@layer components {
+
+  /* Simplified styles */
+  .neon-border {
+    @apply border border-border;
+    box-shadow: none;
+  }
+
+  .neon-glow {
+    box-shadow: none;
+  }
+
+  .glass-card {
+    @apply bg-card border border-border rounded-lg shadow-sm;
+    background: hsl(var(--card));
+    backdrop-filter: none;
+  }
+
+  .gradient-text {
+    @apply text-foreground;
+    background: none;
+    -webkit-text-fill-color: inherit;
+  }
+
+  .hover-glow {
+    @apply transition-all duration-300;
+  }
+
+  .hover-glow:hover {
+    @apply border-primary/40 -translate-y-1 shadow-lg shadow-black/20;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+
+  .particle {
+    @apply absolute rounded-full bg-primary/5 opacity-[0.05];
+  }
+
+  .molecule-node {
+    @apply rounded-full bg-secondary border border-primary/10 opacity-[0.05];
+    box-shadow: none;
+  }
+
+  .chat-bubble-ai {
+    @apply bg-secondary border border-border rounded-lg px-4 py-3;
+  }
+
+  .chat-bubble-user {
+    @apply bg-primary text-primary-foreground rounded-lg px-4 py-3;
+  }
+
+  .module-card {
+    @apply bg-card border border-border p-8 rounded-lg cursor-pointer transition-all duration-200 hover:border-primary/40 hover:bg-card hover:shadow-lg hover:shadow-black/10;
+  }
+
+  .module-card:hover {
+    transform: translateY(-4px) scale(1.01);
+  }
+
+  .data-panel {
+    @apply bg-card border border-border rounded-lg p-6 space-y-4;
+  }
+
+  .stat-item {
+    @apply flex justify-between items-center py-3 border-b border-border/50 text-sm;
+  }
+
+  .tag-badge {
+    @apply px-2.5 py-1 text-xs font-medium rounded-md bg-secondary text-foreground border border-border;
+  }
+
+  .container-padding {
+    @apply px-8 md:px-12 lg:px-16;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: 'Inter', sans-serif;
+  }
+
+  .animate-float {
+    animation: none;
+  }
+
+  .animate-pulse-glow {
+    animation: none;
+  }
+
+  .animate-drift {
+    animation: none;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full hover:bg-muted-foreground/50;
+  }
 }

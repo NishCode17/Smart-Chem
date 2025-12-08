@@ -1,0 +1,1 @@
+npm install 3dmol in frontend
