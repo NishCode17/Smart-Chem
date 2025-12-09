@@ -133,7 +133,26 @@ const DesignStudio = () => {
   };
 
   const handleSendToLab = (molecule: GeneratedMolecule) => {
-    navigate("/virtual-lab", { state: { molecule } });
+    // Map to the format VirtualLab/API expects (lowercase property keys)
+    const labMolecule = {
+      id: molecule.id,
+      smiles: molecule.smiles,
+      name: `Generated-${molecule.id.slice(-4)}`,
+      properties: {
+        logp: molecule.properties.logP, // Fix case mismatch
+        qed: molecule.properties.qed,
+        mw: molecule.properties.molWeight,
+        tpsa: molecule.properties.tpsa,
+        hbd: molecule.properties.hbdCount,
+        hba: molecule.properties.hbaCount,
+        rot_bonds: molecule.properties.rotatable
+      },
+      admet: molecule.admet,
+      tox_alerts: molecule.tox_alerts,
+      generated_by: activeTab === "optimizer" ? "optimizer" : "generator"
+    };
+
+    navigate("/virtual-lab", { state: { molecule: labMolecule } });
   };
 
   return (
