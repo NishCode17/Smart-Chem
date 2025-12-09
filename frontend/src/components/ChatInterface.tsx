@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Bot, User, Sparkles, Loader2 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSmartChemAssistant } from "@/hooks/useSmartChemAssistant";
@@ -18,11 +20,29 @@ interface ChatInterfaceProps {
     properties: Record<string, number>;
   };
   compact?: boolean;
+  // Optional controlled props
+  messages?: Message[];
+  isLoading?: boolean;
+  onSendMessage?: (message: string, context?: any) => Promise<void>;
 }
 
-export const ChatInterface = ({ moleculeContext, compact = false }: ChatInterfaceProps) => {
-  /* Hook Integration */
-  const { messages, isLoading, sendMessage } = useSmartChemAssistant();
+export const ChatInterface = ({
+  moleculeContext,
+  compact = false,
+  messages: propMessages,
+  isLoading: propIsLoading,
+  onSendMessage
+}: ChatInterfaceProps) => {
+  /* Hook Integration - Only used if props aren't provided */
+  const internalState = useSmartChemAssistant();
+
+  // Determine source of truth (Props > Hook)
+  const isControlled = propMessages !== undefined && onSendMessage !== undefined;
+
+  const messages = isControlled ? propMessages : internalState.messages;
+  const isLoading = isControlled ? propIsLoading : internalState.isLoading;
+  const sendMessage = isControlled ? onSendMessage : internalState.sendMessage;
+
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -41,7 +61,9 @@ export const ChatInterface = ({ moleculeContext, compact = false }: ChatInterfac
     setInput("");
 
     // Pass context if available
-    await sendMessage(currentInput, moleculeContext);
+    if (sendMessage) {
+      await sendMessage(currentInput, moleculeContext);
+    }
   };
 
   return (
@@ -76,7 +98,11 @@ export const ChatInterface = ({ moleculeContext, compact = false }: ChatInterfac
                 className={`max-w-[80%] p-3 rounded-xl ${message.role === "assistant" ? "chat-bubble-ai" : "chat-bubble-user"
                   }`}
               >
-                <p className="text-sm text-foreground leading-relaxed">{message.content}</p>
+                <div className="text-sm text-foreground leading-relaxed prose prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-li:my-0.5">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {message.content}
+                  </ReactMarkdown>
+                </div>
                 <span className="text-xs text-muted-foreground mt-2 block">
                   {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                 </span>

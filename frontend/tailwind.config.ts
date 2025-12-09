@@ -82,11 +82,11 @@ export default {
           "100%": { opacity: "1", transform: "scale(1)" },
         },
         "glow-pulse": {
-          "0%, 100%": { 
-            boxShadow: "0 0 20px hsl(var(--neon-purple) / 0.3), 0 0 40px hsl(var(--neon-pink) / 0.1)" 
+          "0%, 100%": {
+            boxShadow: "0 0 20px hsl(var(--neon-purple) / 0.3), 0 0 40px hsl(var(--neon-pink) / 0.1)"
           },
-          "50%": { 
-            boxShadow: "0 0 40px hsl(var(--neon-purple) / 0.5), 0 0 80px hsl(var(--neon-pink) / 0.3)" 
+          "50%": {
+            boxShadow: "0 0 40px hsl(var(--neon-purple) / 0.5), 0 0 80px hsl(var(--neon-pink) / 0.3)"
           },
         },
         "float": {
@@ -127,5 +127,5 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
 } satisfies Config;

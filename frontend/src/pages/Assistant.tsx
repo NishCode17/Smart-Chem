@@ -3,15 +3,19 @@ import { PageHeader } from "@/components/PageHeader";
 import { ChatInterface } from "@/components/ChatInterface";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  FlaskConical, 
-  FileText, 
-  Lightbulb, 
+import {
+  FlaskConical,
+  FileText,
+  Lightbulb,
   Search,
   Sparkles
 } from "lucide-react";
+import { useSmartChemAssistant } from "@/hooks/useSmartChemAssistant";
 
 const Assistant = () => {
+  // Lift state up to control chat from sidebar
+  const { messages, isLoading, sendMessage } = useSmartChemAssistant();
+
   const quickActions = [
     {
       icon: FlaskConical,
@@ -54,7 +58,7 @@ const Assistant = () => {
               <Sparkles className="w-4 h-4 text-primary" />
               Quick Actions
             </h3>
-            
+
             {quickActions.map((action, i) => (
               <motion.div
                 key={i}
@@ -64,7 +68,9 @@ const Assistant = () => {
               >
                 <Button
                   variant="outline"
-                  className="w-full justify-start text-left h-auto py-3 px-4"
+                  className="w-full justify-start text-left h-auto py-3 px-4 hover:border-primary/50 transition-colors"
+                  onClick={() => sendMessage(action.prompt)}
+                  disabled={isLoading}
                 >
                   <action.icon className="w-4 h-4 mr-3 text-primary flex-shrink-0" />
                   <span className="text-sm">{action.label}</span>
@@ -105,7 +111,11 @@ const Assistant = () => {
             className="lg:col-span-3"
           >
             <Card className="h-[calc(100vh-220px)] min-h-[500px] overflow-hidden">
-              <ChatInterface />
+              <ChatInterface
+                messages={messages}
+                isLoading={isLoading}
+                onSendMessage={sendMessage}
+              />
             </Card>
           </motion.div>
         </div>
