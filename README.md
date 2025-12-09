@@ -2,7 +2,7 @@
 
 Smart Chem is a cutting-edge **AI-powered Drug Discovery Platform** designed to accelerate the early stages of pharmaceutical research. By leveraging **Variational Autoencoders (VAEs)** and **Deep Learning**, Smart Chem enables researchers to generate novel drug-like molecules, optimize lead compounds, and analyze their physicochemical properties in real-time.
 
-![Smart Chem Platform](HomePage.png)
+![Smart Chem Platform](misc/HomePage.png)
 
 ---
 
