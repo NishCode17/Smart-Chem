@@ -64,21 +64,38 @@ const VirtualLab = () => {
     }
   };
 
-  const handleAnalyze = () => {
-    // Identify if input is just smiles or name. For now assume SMILES or manual entry.
-    // In a real app we'd call a 'predict' endpoint.
-    // For this step, we just update the viewer and context if it changed.
+  const handleAnalyze = async () => {
+    if (!smilesInput) return;
+
+    // Check if we need to re-analyze (different smiles or just forcing an update)
     if (!moleculeData || moleculeData.smiles !== smilesInput) {
-      setMoleculeData({
-        ...moleculeData,
-        smiles: smilesInput,
-        name: "Analyzed Molecule",
-        properties: {
-          // Mock properties if brand new analysis
-          logp: 2.5, qed: 0.5, mw: 300,
-          ...moleculeData?.properties
-        }
-      });
+      setIsLoading(true);
+      try {
+        const props = await api.analyze(smilesInput);
+
+        setMoleculeData({
+          id: "temp-analysis", // Temporary ID
+          smiles: smilesInput,
+          name: "Analyzed Molecule",
+          properties: {
+            logp: props.logp,
+            qed: props.qed,
+            mw: props.admet_props?.mw || 0,
+            hbd: props.admet_props?.hbd || 0,
+            hba: props.admet_props?.hba || 0,
+            tpsa: props.admet_props?.tpsa || 0,
+            rot_bonds: props.admet_props?.rotatable || 0
+          },
+          admet: props.admet,       // Real ADMET scores (0-1)
+          tox_alerts: props.tox_alerts, // Real alerts
+          generated_by: "manual"
+        });
+        toast.success("Molecule analyzed successfully");
+      } catch (e: any) {
+        toast.error(e.message || "Analysis failed");
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -233,7 +250,7 @@ const VirtualLab = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="lg:col-span-2 h-[350px] w-full"
+              className="lg:col-span-2 h-[500px] w-full"
             >
               <Card className="h-full overflow-hidden flex flex-col shadow-sm">
                 <div className="p-3 border-b border-border bg-muted/20 flex items-center justify-between">

@@ -40,10 +40,17 @@ interface PropertyPanelProps {
     hba: boolean;
     violations: number;
   };
+  tox_alerts?: {
+    pains: boolean;
+    brenk: boolean;
+    nih: boolean;
+    details?: string[];
+  };
   activeTab?: string;
 }
 
-export const PropertyPanel = ({ properties, admet, lipinski, activeTab = "properties" }: PropertyPanelProps) => {
+export const PropertyPanel = ({ properties, admet, lipinski, tox_alerts, activeTab = "properties" }: PropertyPanelProps) => {
+  // ... (radarData and barData logic remains same)
   const radarData = admet
     ? [
       { property: "Absorption", value: admet.absorption * 100 },
@@ -195,7 +202,9 @@ export const PropertyPanel = ({ properties, admet, lipinski, activeTab = "proper
               </ResponsiveContainer>
               <div className="mt-4 space-y-2">
                 <div className="text-xs text-muted-foreground bg-secondary/20 p-3 rounded-lg">
-                  High absorption and good metabolic stability predicted. Low toxicity risk indicated by AI model confidence of 89%.
+                  {admet
+                    ? `Predicted Toxicity Score: ${(admet.toxicity * 100).toFixed(0)}/100. Lower is better.`
+                    : "High absorption and good metabolic stability predicted. Low toxicity risk indicated by AI model confidence."}
                 </div>
               </div>
             </CardContent>
@@ -220,30 +229,38 @@ export const PropertyPanel = ({ properties, admet, lipinski, activeTab = "proper
             <CardContent>
               <div className="space-y-2">
                 {[
-                  { label: "PAINS Filter", status: "pass" },
-                  { label: "Brenk Alerts", status: "warning" },
-                  { label: "NIH Alerts", status: "pass" },
-                  { label: "Liver Toxicity", status: "pass" }, // Added extra sample data
-                  { label: "Mutagenicity", status: "pass" },
+                  { label: "PAINS Filter", status: tox_alerts?.pains ? "fail" : "pass" },
+                  { label: "Brenk Alerts", status: tox_alerts?.brenk ? "fail" : "pass" },
+                  { label: "NIH Alerts", status: tox_alerts?.nih ? "fail" : "pass" },
                 ].map((alert, i) => (
                   <div key={i} className="flex items-center justify-between text-sm py-2 border-b border-border/50 last:border-0">
                     <span className="text-muted-foreground">{alert.label}</span>
                     <span
                       className={`px-2 py-0.5 rounded-full text-xs font-medium ${alert.status === "pass"
-                          ? "bg-green-500/10 text-green-500"
-                          : "bg-yellow-500/10 text-yellow-500"
+                        ? "bg-green-500/10 text-green-500"
+                        : "bg-red-500/10 text-red-500"
                         }`}
                     >
-                      {alert.status === "pass" ? "Pass" : "Review"}
+                      {alert.status === "pass" ? "Pass" : "Detected"}
                     </span>
                   </div>
                 ))}
               </div>
-              <div className="mt-4 p-3 bg-yellow-500/5 border border-yellow-500/20 rounded-lg">
-                <p className="text-xs text-yellow-600">
-                  <strong>Note:</strong> One structural alert detected (Brenk). Specific substructure may require optimization to reduce potential reactivity.
-                </p>
-              </div>
+
+              {tox_alerts?.details && tox_alerts.details.length > 0 ? (
+                <div className="mt-4 p-3 bg-red-500/5 border border-red-500/20 rounded-lg">
+                  <p className="text-xs text-red-600 font-semibold mb-1">Specific Alerts:</p>
+                  <ul className="text-xs text-red-600/80 list-disc list-inside">
+                    {tox_alerts.details.map((d, i) => <li key={i}>{d}</li>)}
+                  </ul>
+                </div>
+              ) : (
+                <div className="mt-4 p-3 bg-green-500/5 border border-green-500/20 rounded-lg">
+                  <p className="text-xs text-green-600">
+                    No critical structural alerts detected by standard filters.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>

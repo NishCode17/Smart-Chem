@@ -45,7 +45,7 @@ const DesignStudio = () => {
 
   // State for inputs
   const [inputSmiles, setInputSmiles] = useState("");
-  const [targetQED, setTargetQED] = useState(0.8);
+  const [targetQED, setTargetQED] = useState(0.6);
   const [targetLogP, setTargetLogP] = useState(2.5);
 
   const [generatedMolecules, setGeneratedMolecules] = useState<GeneratedMolecule[]>([]);
@@ -63,11 +63,11 @@ const DesignStudio = () => {
       properties: {
         logP: r.properties.logp,
         qed: r.properties.qed,
-        molWeight: (r.properties as any).admet?.mw || 0,
-        hbdCount: (r.properties as any).admet?.hbd || 0,
-        hbaCount: (r.properties as any).admet?.hba || 0,
-        tpsa: (r.properties as any).admet?.tpsa || 0,
-        rotatable: (r.properties as any).admet?.rotatable || 0,
+        molWeight: (r.properties as any).admet_props?.mw || 0,
+        hbdCount: (r.properties as any).admet_props?.hbd || 0,
+        hbaCount: (r.properties as any).admet_props?.hba || 0,
+        tpsa: (r.properties as any).admet_props?.tpsa || 0,
+        rotatable: (r.properties as any).admet_props?.rotatable || 0,
       },
       admet: (r.properties as any).admet,
       tox_alerts: (r.properties as any).tox_alerts
@@ -175,13 +175,12 @@ const DesignStudio = () => {
           {/* Left Panel - Controls */}
           <div className="lg:col-span-1 space-y-4">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="w-full grid grid-cols-2">
+              {/* <TabsList className="w-full grid grid-cols-1">
                 <TabsTrigger value="generator">Generator</TabsTrigger>
-                <TabsTrigger value="optimizer">Optimizer</TabsTrigger>
-              </TabsList>
+              </TabsList> */}
 
               <TabsContent value="generator" className="space-y-4 mt-4">
-                <Card>
+                {/* <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm flex items-center gap-2">
                       <Shuffle className="w-4 h-4 text-primary" />
@@ -206,7 +205,7 @@ const DesignStudio = () => {
                       Generate Random
                     </Button>
                   </CardContent>
-                </Card>
+                </Card> */}
 
                 <Card>
                   <CardHeader className="pb-3">
@@ -262,7 +261,7 @@ const DesignStudio = () => {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="optimizer" className="space-y-4 mt-4">
+              {/* <TabsContent value="optimizer" className="space-y-4 mt-4">
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm flex items-center gap-2">
@@ -329,7 +328,7 @@ const DesignStudio = () => {
                     </div>
                   </CardContent>
                 </Card>
-              </TabsContent>
+              </TabsContent> */}
             </Tabs>
           </div>
 

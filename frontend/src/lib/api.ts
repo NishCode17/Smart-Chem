@@ -281,6 +281,12 @@ export const api = {
             body: JSON.stringify({ smiles }),
         }),
 
+    analyze: (smiles: string) =>
+        fetchWithAuth<MoleculeData["properties"]>("/utils/analyze", {
+            method: "POST",
+            body: JSON.stringify({ smiles }),
+        }),
+
     isAuthenticated: () => {
         return !!getAccessToken();
     },
