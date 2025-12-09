@@ -1,8 +1,25 @@
 from rdkit import Chem
 from rdkit.Chem import Descriptors, QED, Draw, rdMolDescriptors, AllChem
+from rdkit.Chem import FilterCatalog
 import selfies as sf
 import base64
 from io import BytesIO
+import math
+
+# --- Initialize Filter Catalogs (Singleton) ---
+_filters_loaded = False
+_catalog = None
+
+def load_filters():
+    global _filters_loaded, _catalog
+    if not _filters_loaded:
+        params = FilterCatalog.FilterCatalogParams()
+        params.AddCatalog(FilterCatalog.FilterCatalogParams.FilterCatalogs.PAINS)
+        params.AddCatalog(FilterCatalog.FilterCatalogParams.FilterCatalogs.BRENK)
+        params.AddCatalog(FilterCatalog.FilterCatalogParams.FilterCatalogs.NIH)
+        _catalog = FilterCatalog.FilterCatalog(params)
+        _filters_loaded = True
+    return _catalog
 
 def get_3d_mol_block(smiles):
     """
@@ -76,6 +93,76 @@ def calculate_admet(mol):
         "lipinski": lipinski_status
     }
 
+def estimate_admet_scores(mol):
+    """
+    Estimates 0-1 scores for ADMET properties based on functional heuristics.
+    These are approximations, not clinical predictions.
+    """
+    if mol is None: return {}
+
+    logp = Descriptors.MolLogP(mol)
+    tpsa = Descriptors.TPSA(mol)
+    mw = Descriptors.MolWt(mol)
+    
+    # 1. Absorption (Human Intestinal Absorption)
+    # TPSA < 140 is generally good. Sigmoid decay.
+    absorption = 1.0 / (1.0 + math.exp((tpsa - 140) / 15))
+    
+    # 2. Distribution (BBB Penetration)
+    # TPSA < 90 and LogP 2-4 is ideal. 
+    # Gaussian-ish peak around LogP ~3
+    bbb_score = math.exp(-0.5 * ((logp - 3.0) / 1.5)**2)
+    if tpsa > 90: bbb_score *= 0.5
+    
+    # 3. Metabolism (CYP Stability - crude proxy)
+    # High lipophilicity often correlates with clearance.
+    metabolism = 1.0 / (1.0 + math.exp((logp - 4.0) / 1.0)) # Stable if hydrophilic
+    
+    # 4. Excretion (Half-life proxy)
+    # Smaller molecules often cleared faster/renally.
+    excretion = 1.0 / (1.0 + math.exp((mw - 400) / 100))
+    
+    # 5. Toxicity (General)
+    # High LogP (>5) is toxic.
+    toxicity_score = 1.0 / (1.0 + math.exp(-(logp - 5.0))) # Higher is more toxic
+    
+    return {
+        "absorption": round(absorption, 2),
+        "distribution": round(bbb_score, 2),
+        "metabolism": round(metabolism, 2),
+        "excretion": round(excretion, 2),
+        "toxicity": round(toxicity_score, 2)
+    }
+
+def check_toxicity_alerts(mol):
+    """
+    Uses RDKit FilterCatalog to check for PAINS, Brenk, and NIH alerts.
+    """
+    if mol is None: return {}
+    catalog = load_filters()
+    
+    entries = catalog.GetMatches(mol)
+    alerts = []
+    
+    has_pains = False
+    has_brenk = False
+    has_nih = False
+    
+    for entry in entries:
+        desc = entry.GetDescription()
+        alerts.append(desc)
+        if "PAINS" in desc: has_pains = True
+        if "brenk" in desc.lower(): has_brenk = True
+        if "nih" in desc.lower(): has_nih = True
+        
+    return {
+        "pains": has_pains,
+        "brenk": has_brenk,
+        "nih": has_nih,
+        "alerts_count": len(alerts),
+        "details": alerts[:5] # Top 5 alerts
+    }
+
 def calculate_properties(mol):
     """
     Standard properties + Image for cards
@@ -104,7 +191,10 @@ def calculate_properties(mol):
             "smiles": Chem.MolToSmiles(mol),
             "qed": qed,
             "logp": logp,
-            "admet": admet, # <--- NEW FIELD
+            "logp": logp,
+            "admet": estimate_admet_scores(mol),         # Scored (0-1) for Charts
+            "admet_props": calculate_admet(mol),         # Raw Properties (MW, TPSA)
+            "tox_alerts": check_toxicity_alerts(mol),    # Structural Alerts
             "status": status,
             "image": f"data:image/png;base64,{img_str}"
         }
