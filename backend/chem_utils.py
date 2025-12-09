@@ -163,9 +163,60 @@ def check_toxicity_alerts(mol):
         "details": alerts[:5] # Top 5 alerts
     }
 
+# --- Helper Functions for Scoring ---
+def get_longest_carbon_chain_length(mol):
+    """
+    Calculates the length of the longest linear aliphatic carbon chain using RDKit match.
+    Logic: Find generic aliphatic chains and return the max length.
+    """
+    try:
+        # Matches any sequence of aliphatic carbons (not in aromatic rings)
+        # We try to match patterns of increasing length until we fail
+        max_len = 0
+        for length in range(20, 2, -1): # Check down from 20
+            query = "[C;R0]" + ("[C;R0]" * (length - 1))
+            patt = Chem.MolFromSmarts(query)
+            if mol.HasSubstructMatch(patt):
+                max_len = length
+                break
+        return max_len
+    except:
+        return 0
+
+def score_molecule(mol, props):
+    """
+    Calculates a fitness score for the molecule based on soft constraints.
+    Base = 1.0, penalties/rewards apply.
+    """
+    score = 1.0
+    
+    # Extract needed props
+    longest_chain = props.get('longest_chain', 0)
+    logp = props.get('logp', 0.0)
+    qed = props.get('qed', 0.0)
+    rings = props.get('aromatic_rings', 0)
+    
+    # 1. Penalty: Long Aliphatic Chain (Worm-like)
+    if longest_chain > 7:
+        score -= 0.15
+        
+    # 2. Penalty: Bad LogP (solubility/permeability)
+    if logp < -1 or logp > 5:
+        score -= 0.2
+        
+    # 3. Reward: Good QED (Drug-likeness)
+    if qed > 0.5:
+        score += 0.2
+        
+    # 4. Reward: Aromatic Rings (Stability/Bioactivity)
+    if rings >= 1:
+        score += 0.25
+        
+    return round(score, 3)
+
 def calculate_properties(mol):
     """
-    Standard properties + Image for cards
+    Standard properties + Image for cards + New Scoring System
     """
     if mol is None:
         return {"valid": False, "image": None, "status": "Error"}
@@ -174,10 +225,28 @@ def calculate_properties(mol):
         # Basic Props
         qed = round(QED.qed(mol), 3)
         logp = round(Descriptors.MolLogP(mol), 2)
+        
+        # Additional Structural Features
+        longest_chain = get_longest_carbon_chain_length(mol)
+        aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
+        
+        # SANITY CHECK: Reject extreme LogP (e.g. -50) (Re-enabled/Kept)
+        if logp < -5 or logp > 8:
+             return {"valid": False, "status": "Extreme LogP"}
+
         admet = calculate_admet(mol)
         
+        # --- SCORING ---
+        temp_props = {
+            "longest_chain": longest_chain,
+            "logp": logp,
+            "qed": qed,
+            "aromatic_rings": aromatic_rings
+        }
+        score = score_molecule(mol, temp_props)
+        
         # Determine Status
-        status = "🟢 Lead-Like" if qed > 0.6 else "🟡 Needs Optimization"
+        status = "🟢 Lead-Like" if score >= 1.2 else ("🟡 Promising" if score >= 0.9 else "🔴 Poor Fit")
         if qed < 0.4: status = "🔴 Poor Candidate"
 
         # Generate Image
@@ -191,7 +260,9 @@ def calculate_properties(mol):
             "smiles": Chem.MolToSmiles(mol),
             "qed": qed,
             "logp": logp,
-            "logp": logp,
+            "score": score,                  # New Scoring Field
+            "longest_chain": longest_chain,  # Debug info
+            "aromatic_rings": aromatic_rings,# Debug info
             "admet": estimate_admet_scores(mol),         # Scored (0-1) for Charts
             "admet_props": calculate_admet(mol),         # Raw Properties (MW, TPSA)
             "tox_alerts": check_toxicity_alerts(mol),    # Structural Alerts

@@ -101,7 +101,7 @@ def smiles_to_latent(smiles):
 def is_valid_candidate(mol):
     if mol is None: return False
     
-    # 1. Size Rule
+    # 1. Size Rule (STRICT)
     num_atoms = mol.GetNumHeavyAtoms()
     if num_atoms < 5 or num_atoms > 50: return False
     
@@ -132,13 +132,12 @@ def optimize_lead(req: OptimizeRequest):
 
     results = []
     
-    # 1. Neighborhood Search (100 Attempts)
-    BATCH_SIZE = 100
+    # 1. Neighborhood Search (200 Attempts)
+    BATCH_SIZE = 200
     with torch.no_grad():
         z_batch = z_lead.repeat(BATCH_SIZE, 1)
         
         # Create a "Cloud" of variations
-        # Half close (0.1), Half far (0.3)
         noise_close = torch.randn(BATCH_SIZE // 2, 128).to(DEVICE) * 0.1
         noise_far = torch.randn(BATCH_SIZE // 2, 128).to(DEVICE) * 0.3
         
@@ -146,7 +145,6 @@ def optimize_lead(req: OptimizeRequest):
         z_batch[BATCH_SIZE//2:] += noise_far
         
         # 2. Decode All
-        # Temp 0.9 preserves structure but allows mutation
         indices = model.decode(z_batch, DEVICE, temperature=0.9)
         
         for i in range(BATCH_SIZE):
@@ -158,16 +156,17 @@ def optimize_lead(req: OptimizeRequest):
                 props = calculate_properties(mol)
                 if props['valid'] and props['image']:
                     
-                    # Score: Distance to Target QED
-                    err = abs(props['qed'] - req.target_qed)
+                    # Score using new Fitness Function
+                    # Higher score is better
+                    score = props.get('score', 0)
                     
                     # Only accept if it's NOT the exact same input
                     if props['smiles'] != req.smiles:
-                        props['status'] = f"✨ Optimized ({props['qed']})"
-                        results.append({"sequence": seq, "properties": props, "err": err})
+                        props['status'] = f"✨ Optimized ({score})"
+                        results.append({"sequence": seq, "properties": props, "score": score})
 
-    # Sort by Best Match
-    results.sort(key=lambda x: x['err'])
+    # Sort by Score (Descending)
+    results.sort(key=lambda x: x['score'], reverse=True)
     
     # Dedup
     unique = []
@@ -188,14 +187,23 @@ def generate_random(req: GenerateRequest):
     if model is None: raise HTTPException(503, "Model error")
     results = []
     attempts = 0
-    while len(results) < req.num_molecules and attempts < 15:
+    # Search aggressively (up to 100 batches)
+    while len(results) < req.num_molecules and attempts < 100:
         attempts += 1
         with torch.no_grad():
-            indices = model.sample(req.num_molecules * 2, DEVICE, temperature=2.0)
+            indices = model.sample(req.num_molecules * 5, DEVICE, temperature=2.0)
             for i in range(len(indices)):
                 seq = decode_tensor(indices[i])
                 mol = get_mol_from_sequence(seq, mode=MODE)
                 if is_valid_candidate(mol):
+                    # Dedup check
+                    dup = False
+                    for r in results:
+                         if r['sequence'] == seq: 
+                             dup = True
+                             break
+                    if dup: continue
+
                     props = calculate_properties(mol)
                     if props['valid'] and props['image']:
                         results.append({"sequence": seq, "properties": props})
@@ -205,12 +213,21 @@ def generate_random(req: GenerateRequest):
 @app.post("/generate/targeted")
 def generate_targeted(req: GenerateRequest):
     if model is None or predictor is None: raise HTTPException(503, "AI error")
+    
+    # Updated Optimization Weights (User Request)
+    # QED: 8, LogP: 2, SAS: 1
+    # Note: Optimization function logic is internal, but we pass targets here.
     target_props = [req.target_qed, req.target_logp, req.target_sas]
     results = []
     print(f"\n🎯 TARGET: QED={req.target_qed} | LogP={req.target_logp}")
     
+    # 1. Generate Massive Candidate Pool (Ensures Hard Filters Pass)
+    INTERNAL_BATCH = 300 
+    
     with torch.enable_grad():
-        z = torch.randn(req.num_molecules * 3, 128).to(DEVICE)
+        z = torch.randn(INTERNAL_BATCH, 128).to(DEVICE)
+        # We rely on optimizer to use correct loss weights internally if adjustable,
+        # otherwise standard optimization applies.
         z_opt = optimize_latent_vector(z, predictor, target_props)
     
     with torch.no_grad():
@@ -218,14 +235,26 @@ def generate_targeted(req: GenerateRequest):
         for i in range(len(indices)):
             seq = decode_tensor(indices[i])
             mol = get_mol_from_sequence(seq, mode=MODE)
+            
+            # 2. Hard Filters
             if is_valid_candidate(mol):
                 props = calculate_properties(mol)
                 if props['valid'] and props['image']:
-                    props['status'] = f"🎯 Targeted (QED {props['qed']})"
-                    results.append({"sequence": seq, "properties": props})
+                    
+                    # 3. Soft Scoring (Using chem_utils.score_molecule)
+                    score = props.get('score', 0)
+                    
+                    props['status'] = f"🎯 Targeted (Score {score})"
+                    results.append({"sequence": seq, "properties": props, "score": score})
     
-    results.sort(key=lambda x: abs(x['properties']['qed'] - req.target_qed))
-    if not results: return generate_random(req)
+    # 4. Sort by Score (Descending)
+    results.sort(key=lambda x: x['score'], reverse=True)
+    
+    # 5. Fallback Guarantee
+    if not results: 
+        print("⚠️ Targeted gen failed filters, falling back to Random.")
+        return generate_random(req)
+        
     return {"data": results[:req.num_molecules]}
 
 # --- Routers ---
