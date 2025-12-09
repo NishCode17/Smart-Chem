@@ -288,9 +288,9 @@ const LibraryPage = () => {
                     <Folder className={`w-4 h-4 mr-2 ${selectedProjectId === project._id ? "text-primary" : "text-muted-foreground"}`} />
                     <span className="truncate">{project.name}</span>
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive" onClick={(e) => handleDeleteProject(project._id, e)}>
+                  {/* <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive" onClick={(e) => handleDeleteProject(project._id, e)}>
                     <Trash2 className="w-3 h-3" />
-                  </Button>
+                  </Button> */}
                 </div>
               ))
             )}
