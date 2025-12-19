@@ -2,9 +2,9 @@
 
 ## Introduction
 
-SmartChem is a backend-orchestrated machine learning system designed to address the challenge of molecule generation and property optimization. It demonstrates the integration of generative models within a web service architecture, focusing on the engineering of long-running computational tasks.
+SmartChem is an AI-powered computational drug discovery platform designed to accelerate chemical space exploration. It empowers researchers to autonomously generate novel molecular structures and optimize their chemical properties through advanced generative machine learning models.
 
-This project functions as a system for chemical space exploration, decoupling complex ML workloads from synchronous API interaction. It is designed to illustrate backend orchestration patterns rather than serve as a consumer product.
+By leveraging sophisticated chemical workflows, SmartChem automates the complex process of identifying high-potential drug candidates, providing a streamlined interface for generation, analysis, and multi-objective optimization of molecular compounds.
 
 ## Architecture
 
