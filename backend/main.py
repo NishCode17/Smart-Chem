@@ -263,6 +263,8 @@ from backend.routers import auth, projects, molecules
 app.include_router(auth.router)
 app.include_router(projects.router)
 app.include_router(molecules.router)
+from backend.routers import jobs
+app.include_router(jobs.router)
 
 from backend.assistant import ChatRequest, get_groq_response
 

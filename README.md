@@ -29,6 +29,10 @@ Smart Chem is a cutting-edge **AI-powered Drug Discovery Platform** designed to 
 ### 5. **Smart Assistant**
    - An integrated AI assistant to answer queries about chemical properties, synthesis pathways, and general platform usage.
 
+### 6. **Asynchronous Task Engine**
+   - **Job System**: Long-running ML generations are handled asynchronously to prevent UI blocking.
+   - **Background Processing**: Native FastAPI `BackgroundTasks` manage heavy compute workloads.
+
 ---
 
 ## 🛠️ Technology Stack
@@ -39,6 +43,7 @@ Smart Chem is a cutting-edge **AI-powered Drug Discovery Platform** designed to 
 - **RDKit**: Industry-standard cheminformatics library for molecular processing.
 - **SELFIES**: Robust molecular string representation (100% valid strings).
 - **MongoDB**: NoSQL database for flexible storage of projects and molecules.
+- **Async Jobs**: `BackgroundTasks` + MongoDB based state management for ML workloads.
 
 ### **Frontend (TypeScript)**
 - **React (Vite)**: Fast, modern UI library.
@@ -100,7 +105,7 @@ npm run dev
 ```
 Smart Chem/
 ├── backend/                # FastAPI Application & Logic
-│   ├── routers/            # API Endpoints (Auth, Projects, Molecules)
+│   ├── routers/            # API Endpoints (Auth, Projects, Molecules, Jobs)
 │   ├── models.py           # Pydantic & DB Models
 │   ├── chem_utils.py       # RDKit & Calculation Utilities
 │   └── main.py             # App Entry Point

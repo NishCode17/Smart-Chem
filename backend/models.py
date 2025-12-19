@@ -158,3 +158,29 @@ class Token(BaseModel):
 class TokenPayload(BaseModel):
     sub: str
     exp: int
+
+# -----------------------------------------------------
+# JOB MODELS
+# -----------------------------------------------------
+class JobCreate(BaseModel):
+    task_type: str  # one of: GENERATE_RANDOM, GENERATE_TARGETED, OPTIMIZE_LEAD
+    params: Dict[str, Any]
+
+class JobDB(MongoBaseModel):
+    id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
+    user_id: str
+    task_type: str
+    status: str = "PENDING"  # PENDING, PROCESSING, COMPLETED, FAILED
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    params: Dict[str, Any]
+    result: Optional[List[Any]] = None
+    error: Optional[str] = None
+
+class JobResponse(BaseModel):
+    job_id: str
+    status: str
+    created_at: datetime
+    updated_at: datetime
+    result: Optional[List[Any]] = None
+    error: Optional[str] = None
