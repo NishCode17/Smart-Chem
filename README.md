@@ -1,39 +1,84 @@
 # SmartChem
 
-## Introduction
+## Overview
 
-SmartChem is an AI-powered computational drug discovery platform designed to accelerate chemical space exploration. It empowers researchers to autonomously generate novel molecular structures and optimize their chemical properties through advanced generative machine learning models.
+SmartChem is an application that demonstrates how **generative AI and machine learning** can be used for **molecular generation and optimization** in computational drug discovery. The project explores how ML models can generate novel molecular structures and evaluate them using standard chemical properties.
 
-By leveraging sophisticated chemical workflows, SmartChem automates the complex process of identifying high-potential drug candidates, providing a streamlined interface for generation, analysis, and multi-objective optimization of molecular compounds.
+The goal of SmartChem is to showcase the **end-to-end workflow** of molecule generation, evaluation, and optimization, combining machine learning with cheminformatics tools in a usable application.
 
-## Architecture
+---
 
-The system is architected around a **FastAPI** service that acts as the central entry point.
+## Problem Context
 
-*   **Entry Point**: RESTful API endpoints handle request validation and job dispatch.
-*   **Asynchronous Execution**: Long-running ML tasks are executed asynchronously to ensure the API remains responsive.
-*   **State Management**: **MongoDB** is used to persist job states, intermediate progress, and final molecular results.
+In early-stage drug discovery, researchers often need to explore a large chemical space to identify molecules with desirable properties such as drug-likeness and synthetic feasibility. This process is computationally intensive and difficult to do manually.
 
-## Asynchronous Execution
+SmartChem addresses this by:
+- generating candidate molecules using a generative ML model,
+- evaluating their chemical properties,
+- allowing targeted optimization based on desired constraints.
 
-To manage the computational latency inherent in generative models, the system implements a controlled asynchronous workflow:
+---
 
-1.  **Job Submission**: Client requests for molecule generation are accepted immediately, returning a unique Job ID.
-2.  **Background Execution**: The specific ML task (e.g., generation or optimization) creates a background workload that runs independently of the HTTP response cycle.
-3.  **Result Persistence**: Upon completion, results are serialized and stored in the database, updating the job status for subsequent retrieval.
+## System Architecture (High-Level)
 
-## ML Components
+SmartChem is implemented as a web-based application with a backend API that coordinates ML execution:
 
-The machine learning logic is scoped to specific cheminformatics tasks:
+- **FastAPI Backend**  
+  Provides REST APIs for molecule generation and optimization requests.
 
-*   **VAE-based Generation**: Utilizes Variational Autoencoders to map molecular structures to and from a latent space.
-*   **Property Evaluation**: Computes standard metrics such as QED (Quantitative Estimation of Drug-likeness), LogP, and SAS (Synthetic Accessibility Score).
-*   **Cheminformatics Engine**: Integrates **RDKit** for molecular validation, canonicalization, and rule enforcement.
+- **Asynchronous Processing**  
+  ML tasks can take time, so requests are handled asynchronously to keep the application responsive.
 
-## Explicit Non-Goals
+- **MongoDB**  
+  Used to store request metadata, job status, and generated molecular results.
 
-To clarify the scope and intent of this project:
+---
 
-*   **Not a production drug-discovery platform**: The focus is on software architecture, not novel chemical discovery.
-*   **Not a distributed training system**: The system uses pre-trained models for inference and optimization.
-*   **Not focused on scaling or deployment**: Scaling strategies and cloud deployment pipelines are outside the scope of this implementation.
+## Workflow
+
+1. A user submits a request to generate or optimize molecules.
+2. The backend schedules the ML task and immediately returns a request identifier.
+3. The ML model performs molecule generation or optimization.
+4. Generated molecules are evaluated using chemical property metrics.
+5. Results are stored and made available for retrieval.
+
+---
+
+## Machine Learning & Chemistry Components
+
+SmartChem integrates machine learning and cheminformatics as follows:
+
+- **Generative Model**  
+  Uses a generative ML model (based on a Variational Autoencoder) to produce novel molecular structures.
+
+- **Molecular Representation**  
+  Molecules are processed in a structured representation suitable for ML-based generation.
+
+- **Property Evaluation**  
+  Each generated molecule is evaluated using standard metrics:
+  - QED (Quantitative Estimation of Drug-likeness)
+  - LogP (lipophilicity)
+  - SAS (Synthetic Accessibility Score)
+
+- **RDKit Integration**  
+  RDKit is used for molecule validation, property calculation, and filtering of invalid structures.
+
+The emphasis of the project is on **applying generative models to a real problem**, rather than on proposing new ML architectures.
+
+---
+
+## Key Learnings
+
+- Applying generative ML models to chemical structure generation
+- Integrating ML inference into an application workflow
+- Handling long-running ML tasks in an application setting
+- Using cheminformatics tools (RDKit) alongside ML models
+
+---
+
+## Tech Stack
+
+- **Backend**: FastAPI
+- **Database**: MongoDB
+- **ML / Chemistry**: VAE, PyTorch, RDKit
+- **APIs**: REST
