@@ -55,7 +55,8 @@ const DesignStudio = () => {
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
 
   // Helper to map API data to UI format
-  const mapResults = (results: MoleculeData[]) => {
+  const mapResults = (results: any[]) => { // Relaxed type for robustness
+    if (!results) return [];
     return results.map((r, i) => ({
       id: `${Date.now()}-${i}`,
       image: r.properties.image,
@@ -106,23 +107,56 @@ const DesignStudio = () => {
     }
   };
 
+  // Async Polling Logic
+  const pollJob = async (jobId: string) => {
+    try {
+      const job = await api.getJobStatus(jobId);
+
+      if (job.status === "COMPLETED" && job.result) {
+        setGeneratedMolecules(mapResults(job.result)); // Note: result is list of dicts, unlike {data: []} wrapper
+        toast.success("Optimization Completed!");
+        setIsGenerating(false);
+        return;
+      }
+
+      if (job.status === "FAILED") {
+        toast.error(`Job Failed: ${job.error}`);
+        setIsGenerating(false);
+        return;
+      }
+
+      // Continue Polling
+      setTimeout(() => pollJob(jobId), 2000);
+
+    } catch (e) {
+      toast.error("Error checking job status");
+      setIsGenerating(false);
+    }
+  };
+
   const handleOptimize = async () => {
     if (!inputSmiles) {
       toast.error("Please enter a SMILES string to optimize");
       return;
     }
     setIsGenerating(true);
+    toast.message("Job Submitted to Worker...");
+
     try {
-      const res = await api.optimizeLead({
+      // 1. Submit Async Job
+      const job = await api.createJob({
         smiles: inputSmiles,
         target_qed: targetQED,
         target_logp: targetLogP
       });
-      setGeneratedMolecules(mapResults(res.data));
-      toast.success("Lead optimization complete!");
+
+      toast.message(`Job ID: ${job.job_id} - Queued`);
+
+      // 2. Start Polling
+      pollJob(job.job_id);
+
     } catch (e: any) {
-      toast.error(e.message || "Optimization failed");
-    } finally {
+      toast.error(e.message || "Optimization submission failed");
       setIsGenerating(false);
     }
   };
@@ -175,12 +209,13 @@ const DesignStudio = () => {
           {/* Left Panel - Controls */}
           <div className="lg:col-span-1 space-y-4">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              {/* <TabsList className="w-full grid grid-cols-1">
+              <TabsList className="w-full grid grid-cols-2">
                 <TabsTrigger value="generator">Generator</TabsTrigger>
-              </TabsList> */}
+                <TabsTrigger value="optimizer">Optimizer</TabsTrigger>
+              </TabsList>
 
               <TabsContent value="generator" className="space-y-4 mt-4">
-                {/* <Card>
+                <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm flex items-center gap-2">
                       <Shuffle className="w-4 h-4 text-primary" />
@@ -205,7 +240,7 @@ const DesignStudio = () => {
                       Generate Random
                     </Button>
                   </CardContent>
-                </Card> */}
+                </Card>
 
                 <Card>
                   <CardHeader className="pb-3">
@@ -261,7 +296,7 @@ const DesignStudio = () => {
                 </Card>
               </TabsContent>
 
-              {/* <TabsContent value="optimizer" className="space-y-4 mt-4">
+              <TabsContent value="optimizer" className="space-y-4 mt-4">
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm flex items-center gap-2">
@@ -328,7 +363,7 @@ const DesignStudio = () => {
                     </div>
                   </CardContent>
                 </Card>
-              </TabsContent> */}
+              </TabsContent>
             </Tabs>
           </div>
 

@@ -19,28 +19,28 @@ SmartChem addresses this by:
 
 ---
 
-## System Architecture (High-Level)
+## System Architecture (Hybrid)
 
-SmartChem is implemented as a web-based application with a backend API that coordinates ML execution:
+SmartChem uses a **Hybrid Monolithic Architecture** to support both real-time interaction and heavy background processing:
 
-- **FastAPI Backend**  
-  Provides REST APIs for molecule generation and optimization requests.
+- **FastAPI Backend (API)**  
+  Handles synchronous requests (`/generate`) and manages the job queue. Serves as the entry point for the frontend.
 
-- **Asynchronous Processing**  
-  ML tasks can take time, so requests are handled asynchronously to keep the application responsive.
+- **ML Worker (Background Processor)**  
+  A standalone Python process that consumes long-running optimization tasks (`/jobs`) from MongoDB. It uses a shared ML engine to ensure consistency with the API.
+  
+- **Shared ML Executor**
+  A centralized module (`backend/ml_executor.py`) that contains the core logic for VAE inference, property prediction, and RDKit validation, ensuring zero duplication between the API and Worker.
 
 - **MongoDB**  
-  Used to store request metadata, job status, and generated molecular results.
+  Acts as both the persistence layer and the asynchronous job queue.
 
 ---
 
 ## Workflow
 
-1. A user submits a request to generate or optimize molecules.
-2. The backend schedules the ML task and immediately returns a request identifier.
-3. The ML model performs molecule generation or optimization.
-4. Generated molecules are evaluated using chemical property metrics.
-5. Results are stored and made available for retrieval.
+1. **Synchronous**: User requests random generation -> API runs inference immediately -> Returns results (Best for quick interaction).
+2. **Asynchronous**: User requests Lead Optimization -> API creates PENDING job -> Worker claims & processes job -> DB Updated -> User polls for results (Best for heavy computation).
 
 ---
 
@@ -48,37 +48,50 @@ SmartChem is implemented as a web-based application with a backend API that coor
 
 SmartChem integrates machine learning and cheminformatics as follows:
 
-- **Generative Model**  
-  Uses a generative ML model (based on a Variational Autoencoder) to produce novel molecular structures.
-
-- **Molecular Representation**  
-  Molecules are processed in a structured representation suitable for ML-based generation.
-
-- **Property Evaluation**  
-  Each generated molecule is evaluated using standard metrics:
-  - QED (Quantitative Estimation of Drug-likeness)
-  - LogP (lipophilicity)
-  - SAS (Synthetic Accessibility Score)
-
-- **RDKit Integration**  
-  RDKit is used for molecule validation, property calculation, and filtering of invalid structures.
-
-The emphasis of the project is on **applying generative models to a real problem**, rather than on proposing new ML architectures.
+- **Generative Model**: Variational Autoencoder (1D CNN/GRU) mapping SELFIES to latent space.
+- **Property Predictor**: MLP predicting QED, LogP, and SAS from latent vectors.
+- **Optimization**: Gradient Ascent in latent space to maximize predicted properties.
+- **RDKit Integration**: Validates chemical structure and calculates physical properties.
 
 ---
 
-## Key Learnings
+## How to Run
 
-- Applying generative ML models to chemical structure generation
-- Integrating ML inference into an application workflow
-- Handling long-running ML tasks in an application setting
-- Using cheminformatics tools (RDKit) alongside ML models
+### Prerequisites
+- Python 3.9+
+- MongoDB running locally or via URI
+- Node.js (for Frontend)
+
+### 1. Setup Environment
+```bash
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### 2. Start the API Server
+```bash
+uvicorn backend.main:app --reload
+```
+*The API is now running at `http://localhost:8000`*
+
+### 3. Start the ML Worker (New)
+In a new terminal window:
+```bash
+python -m backend.worker
+```
+*The worker is now listening for optimization jobs.*
+
+### 4. Start Frontend
+```bash
+cd frontend
+npm run dev
+```
 
 ---
 
 ## Tech Stack
 
 - **Backend**: FastAPI
+- **Worker**: Python `asyncio` + MongoDB `find_one_and_update`
 - **Database**: MongoDB
-- **ML / Chemistry**: VAE, PyTorch, RDKit
-- **APIs**: REST
+- **ML / Chemistry**: PyTorch, RDKit, SELFIES

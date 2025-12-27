@@ -275,6 +275,16 @@ export const api = {
             body: JSON.stringify(req),
         }),
 
+    // Async Jobs
+    createJob: (req: OptimizeRequest) =>
+        fetchWithAuth<JobResponse>("/jobs/optimize", {
+            method: "POST",
+            body: JSON.stringify(req)
+        }),
+
+    getJobStatus: (jobId: string) =>
+        fetchWithAuth<JobResponse>(`/jobs/${jobId}`),
+
     get3DStructure: (smiles: string) =>
         fetchWithAuth<{ mol_block: string }>("/utils/3d", {
             method: "POST",

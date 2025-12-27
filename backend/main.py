@@ -47,215 +47,50 @@ class OptimizeRequest(BaseModel):
 
 @app.on_event("startup")
 def load_resources():
-    global model, predictor, idx_to_token, token_to_idx
-    print("⚡ Loading Resources...")
-    if not os.path.exists(VOCAB_PATH): 
-        print(f"❌ Critical: Vocab not found at {VOCAB_PATH}")
-        return
-        
-    with open(VOCAB_PATH, 'r') as f: vocab = json.load(f)
-    
-    # +3 SHIFT (Correct for your model)
-    idx_to_token = {v + 3: k for k, v in vocab.items()}
-    idx_to_token[0] = ""; idx_to_token[1] = ""; idx_to_token[2] = ""
-    token_to_idx = {k: v + 3 for k, v in vocab.items()}
-    token_to_idx["<pad>"] = 0; token_to_idx["<sos>"] = 1; token_to_idx["<eos>"] = 2
-    
-    vocab_size = len(vocab) + 3
-    print(f"   Vocab Size: {vocab_size} (Indices shifted +3)")
-    
-    model = VAE(vocab_size, latent_dim=128).to(DEVICE)
-    if os.path.exists(VAE_CHECKPOINT):
-        model.load_state_dict(torch.load(VAE_CHECKPOINT, map_location=DEVICE))
-        model.eval()
-        print("✅ VAE Loaded")
+    # Use Shared Executor to load resources (idempotent)
+    import backend.ml_executor as ml_exec
+    ml_exec.load_resources()
 
-    predictor = PropertyPredictor(latent_dim=128).to(DEVICE)
-    if os.path.exists(PREDICTOR_CHECKPOINT):
-        predictor.load_state_dict(torch.load(PREDICTOR_CHECKPOINT, map_location=DEVICE))
-        predictor.eval()
-        print("✅ Predictor Loaded")
-
-def decode_tensor(tensor_seq):
-    tokens = []
-    for idx in tensor_seq:
-        idx = idx.item()
-        if idx == 2: break 
-        if idx > 2: tokens.append(idx_to_token.get(idx, ""))
-    return "".join(tokens)
-
-def smiles_to_latent(smiles):
-    try:
-        selfies_str = sf.encoder(smiles)
-        if not selfies_str: return None
-        tokens = list(sf.split_selfies(selfies_str))
-        indices = [token_to_idx.get(t, 0) for t in tokens]
-        if len(indices) < 100: indices += [0] * (100 - len(indices))
-        else: indices = indices[:100]
-        tensor_input = torch.tensor([indices]).long().to(DEVICE)
-        with torch.no_grad(): _, mu, _ = model(tensor_input)
-        return mu
-    except: return None
-
-# --- STRICT FILTER (Anti-Carbon) ---
-def is_valid_candidate(mol):
-    if mol is None: return False
-    
-    # 1. Size Rule (STRICT)
-    num_atoms = mol.GetNumHeavyAtoms()
-    if num_atoms < 5 or num_atoms > 50: return False
-    
-    # 2. Composition Rule (NO PURE CARBON)
-    atoms = [a.GetSymbol() for a in mol.GetAtoms()]
-    unique_atoms = set(atoms)
-    
-    # If the ONLY atom type is Carbon, REJECT IT.
-    if len(unique_atoms) == 1 and "C" in unique_atoms:
-        return False
-        
-    return True
+# --- STRICT FILTER IS NOW IN ml_executor (Imported internally) ---
 
 @app.post("/optimize/lead")
 def optimize_lead(req: OptimizeRequest):
     """
-    Neighborhood Scanning Strategy:
-    1. Encode Lead -> Z
-    2. Create cloud of random noise around Z
-    3. Decode all and pick the best one
+    Synchronous Endpoint (Legacy)
+    Delegates to shared executor.
     """
-    if model is None: raise HTTPException(503, "AI error")
-    
-    print(f"\n🔧 OPTIMIZING: {req.smiles[:15]}...")
-    
-    z_lead = smiles_to_latent(req.smiles)
-    if z_lead is None: raise HTTPException(400, "Invalid molecule")
+    try:
+        import backend.ml_executor as ml_exec
+        results = ml_exec.run_lead_optimization(req.smiles)
+        print(f"   ✅ Found {len(results)} valid variations.")
+        return {"data": results}
+    except Exception as e:
+        raise HTTPException(500, str(e))
 
-    results = []
-    
-    # 1. Neighborhood Search (200 Attempts)
-    BATCH_SIZE = 200
-    with torch.no_grad():
-        z_batch = z_lead.repeat(BATCH_SIZE, 1)
-        
-        # Create a "Cloud" of variations
-        noise_close = torch.randn(BATCH_SIZE // 2, 128).to(DEVICE) * 0.1
-        noise_far = torch.randn(BATCH_SIZE // 2, 128).to(DEVICE) * 0.3
-        
-        z_batch[:BATCH_SIZE//2] += noise_close
-        z_batch[BATCH_SIZE//2:] += noise_far
-        
-        # 2. Decode All
-        indices = model.decode(z_batch, DEVICE, temperature=0.9)
-        
-        for i in range(BATCH_SIZE):
-            seq = decode_tensor(indices[i])
-            mol = get_mol_from_sequence(seq, mode=MODE)
-            
-            # 3. Filter & Score
-            if is_valid_candidate(mol):
-                props = calculate_properties(mol)
-                if props['valid'] and props['image']:
-                    
-                    # Score using new Fitness Function
-                    # Higher score is better
-                    score = props.get('score', 0)
-                    
-                    # Only accept if it's NOT the exact same input
-                    if props['smiles'] != req.smiles:
-                        props['status'] = f"✨ Optimized ({score})"
-                        results.append({"sequence": seq, "properties": props, "score": score})
-
-    # Sort by Score (Descending)
-    results.sort(key=lambda x: x['score'], reverse=True)
-    
-    # Dedup
-    unique = []
-    seen = set()
-    seen.add(req.smiles)
-    for r in results:
-        s = r['properties']['smiles']
-        if s not in seen:
-            seen.add(s)
-            unique.append(r)
-            
-    print(f"   ✅ Found {len(unique)} valid variations.")
-    return {"data": unique[:5]}
-
-# --- GENERATOR (Unchanged) ---
+# --- GENERATOR ---
 @app.post("/generate")
 def generate_random(req: GenerateRequest):
-    if model is None: raise HTTPException(503, "Model error")
-    results = []
-    attempts = 0
-    # Search aggressively (up to 100 batches)
-    while len(results) < req.num_molecules and attempts < 100:
-        attempts += 1
-        with torch.no_grad():
-            indices = model.sample(req.num_molecules * 5, DEVICE, temperature=2.0)
-            for i in range(len(indices)):
-                seq = decode_tensor(indices[i])
-                mol = get_mol_from_sequence(seq, mode=MODE)
-                if is_valid_candidate(mol):
-                    # Dedup check
-                    dup = False
-                    for r in results:
-                         if r['sequence'] == seq: 
-                             dup = True
-                             break
-                    if dup: continue
-
-                    props = calculate_properties(mol)
-                    if props['valid'] and props['image']:
-                        results.append({"sequence": seq, "properties": props})
-                        if len(results) >= req.num_molecules: break
-    return {"data": results}
+    try:
+        import backend.ml_executor as ml_exec
+        results = ml_exec.run_random_generation(req.num_molecules)
+        return {"data": results}
+    except Exception as e:
+        raise HTTPException(500, str(e))
 
 @app.post("/generate/targeted")
 def generate_targeted(req: GenerateRequest):
-    if model is None or predictor is None: raise HTTPException(503, "AI error")
-    
-    # Updated Optimization Weights (User Request)
-    # QED: 8, LogP: 2, SAS: 1
-    # Note: Optimization function logic is internal, but we pass targets here.
-    target_props = [req.target_qed, req.target_logp, req.target_sas]
-    results = []
-    print(f"\n🎯 TARGET: QED={req.target_qed} | LogP={req.target_logp}")
-    
-    # 1. Generate Massive Candidate Pool (Ensures Hard Filters Pass)
-    INTERNAL_BATCH = 300 
-    
-    with torch.enable_grad():
-        z = torch.randn(INTERNAL_BATCH, 128).to(DEVICE)
-        # We rely on optimizer to use correct loss weights internally if adjustable,
-        # otherwise standard optimization applies.
-        z_opt = optimize_latent_vector(z, predictor, target_props)
-    
-    with torch.no_grad():
-        indices = model.decode(z_opt, DEVICE, temperature=0.8)
-        for i in range(len(indices)):
-            seq = decode_tensor(indices[i])
-            mol = get_mol_from_sequence(seq, mode=MODE)
-            
-            # 2. Hard Filters
-            if is_valid_candidate(mol):
-                props = calculate_properties(mol)
-                if props['valid'] and props['image']:
-                    
-                    # 3. Soft Scoring (Using chem_utils.score_molecule)
-                    score = props.get('score', 0)
-                    
-                    props['status'] = f"🎯 Targeted (Score {score})"
-                    results.append({"sequence": seq, "properties": props, "score": score})
-    
-    # 4. Sort by Score (Descending)
-    results.sort(key=lambda x: x['score'], reverse=True)
-    
-    # 5. Fallback Guarantee
-    if not results: 
-        print("⚠️ Targeted gen failed filters, falling back to Random.")
-        return generate_random(req)
-        
-    return {"data": results[:req.num_molecules]}
+    try:
+        import backend.ml_executor as ml_exec
+        results = ml_exec.run_targeted_generation(
+            req.num_molecules, 
+            req.target_qed, 
+            req.target_logp, 
+            req.target_sas
+        )
+        return {"data": results}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
 
 # --- Routers ---
 from backend.routers import auth, projects, molecules
