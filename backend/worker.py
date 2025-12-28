@@ -44,6 +44,14 @@ async def worker_loop():
                 if job['task_type'] == "OPTIMIZE_LEAD":
                     # DELEGATE TO EXECUTOR
                     result = ml_exec.run_lead_optimization(smiles=params['smiles'])
+                
+                elif job['task_type'] == "GENERATE_TARGETED":
+                    result = ml_exec.run_targeted_generation(
+                        num_molecules=params['num_molecules'],
+                        target_qed=params['target_qed'],
+                        target_logp=params['target_logp'],
+                        target_sas=params.get('target_sas', 3.0)
+                    )
                     
                 else:
                     raise ValueError(f"Unknown Task: {job['task_type']}")

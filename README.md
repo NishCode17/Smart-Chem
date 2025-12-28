@@ -19,39 +19,57 @@ SmartChem addresses this by:
 
 ---
 
-## System Architecture (Hybrid)
+## System Architecture (Event-Driven Async)
 
-SmartChem uses a **Hybrid Monolithic Architecture** to support both real-time interaction and heavy background processing:
+SmartChem uses a **Fully Asynchronous Event-Driven Architecture** to ensure high scalability and responsiveness. All heavy Machine Learning computations are decoupled from the user-facing API.
 
-- **FastAPI Backend (API)**  
-  Handles synchronous requests (`/generate`) and manages the job queue. Serves as the entry point for the frontend.
+- **FastAPI Gateway (API)**  
+  Acts as a lightweight "Receptionist". It authenticates users, validates inputs, and submits tasks to the job queue (`/jobs`). It **never** runs ML inference directly, ensuring the server stays responsive.
 
 - **ML Worker (Background Processor)**  
-  A standalone Python process that consumes long-running optimization tasks (`/jobs`) from MongoDB. It uses a shared ML engine to ensure consistency with the API.
+  A dedicated process that consumes tasks (Targeted Gen, Lead Opt) from MongoDB. It claims jobs, runs the heavy VAE/RDKit math, and updates the database with results.
   
 - **Shared ML Executor**
-  A centralized module (`backend/ml_executor.py`) that contains the core logic for VAE inference, property prediction, and RDKit validation, ensuring zero duplication between the API and Worker.
+  The "Brain" of the operation. A centralized module loaded by the Worker to perform the actual math.
 
-- **MongoDB**  
-  Acts as both the persistence layer and the asynchronous job queue.
+- **MongoDB (Queue & State)**  
+  Acts as the message broker. Jobs transition atomically from `PENDING` $\to$ `PROCESSING` $\to$ `COMPLETED`.
 
 ---
 
 ## Workflow
 
-1. **Synchronous**: User requests random generation -> API runs inference immediately -> Returns results (Best for quick interaction).
-2. **Asynchronous**: User requests Lead Optimization -> API creates PENDING job -> Worker claims & processes job -> DB Updated -> User polls for results (Best for heavy computation).
+1. **Submission**: User sends request (e.g., "Optimize this Lead") -> API creates a Job Ticket -> Returns `job_id` ($< 100ms$).
+2. **Queueing**: The Job sits in MongoDB as `PENDING`.
+3. **Processing**: The Worker (looping in background) claims the job, locks it, and runs the ML algorithms (`~2s - 20s`).
+4. **Completion**: Worker saves results to DB.
+5. **Pollling**: Frontend automatically checks job status and displays results once `COMPLETED`.
 
 ---
 
 ## Machine Learning & Chemistry Components
 
+## Machine Learning & Chemistry Components
+
 SmartChem integrates machine learning and cheminformatics as follows:
 
-- **Generative Model**: Variational Autoencoder (1D CNN/GRU) mapping SELFIES to latent space.
-- **Property Predictor**: MLP predicting QED, LogP, and SAS from latent vectors.
-- **Optimization**: Gradient Ascent in latent space to maximize predicted properties.
-- **RDKit Integration**: Validates chemical structure and calculates physical properties.
+### 1. Generative Models
+- **Architecture**: Variational Autoencoder (VAE) trained on SELFIES representation.
+- **Latent Space**: 128-dimensional continuous space where similar molecules map to similar vectors.
+- **Property Predictor**: A feed-forward neural network (MLP) acts as a surrogate model to predict QED, LogP, and SAS directly from latent vectors ($z$).
+
+### 2. Optimization Algorithms
+- **Targeted Generation (Gradient Ascent)**:  
+  Starts from random noise ($z$) and iteratively updates the vector using gradients from the Property Predictor to maximize the match with user-defined targets (e.g., QED=0.9).
+  
+- **Lead Optimization (Neighborhood Search)**:  
+  Takes an existing molecule, encodes it to ($z_{lead}$), and samples a "cloud" of 200+ perturbations (Gaussian noise). These are decoded and filtered to find structural analogs with improved properties.
+
+### 3. Validation & Cheminformatics
+- **RDKit Integration**: Acts as the ground-truth validator.
+  - Filters invalid SMILES strings.
+  - Rejects molecules with only Carbon atoms (sanity check).
+  - Calculates accurate physicochemical properties for the final results.
 
 ---
 

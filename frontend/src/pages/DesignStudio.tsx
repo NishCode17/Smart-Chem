@@ -90,19 +90,20 @@ const DesignStudio = () => {
 
   const handleTargetedGenerate = async () => {
     setIsGenerating(true);
+    toast.message("Targeted Job Submitted...");
     try {
-      // Use Property Optimization from scratch
-      const res = await api.generateTargeted({
+      const job = await api.createTargetedJob({
         num_molecules: 3,
         target_qed: targetQED,
         target_logp: targetLogP,
-        target_sas: 3.0 // Default internal
+        target_sas: 3.0
       });
-      setGeneratedMolecules(mapResults(res.data));
-      toast.success("Generated targeted molecules");
+
+      toast.message(`Job ID: ${job.job_id} - Queued`);
+      pollJob(job.job_id);
+
     } catch (e: any) {
       toast.error(e.message || "Generation failed");
-    } finally {
       setIsGenerating(false);
     }
   };
@@ -210,12 +211,14 @@ const DesignStudio = () => {
           <div className="lg:col-span-1 space-y-4">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="w-full grid grid-cols-2">
-                <TabsTrigger value="generator">Generator</TabsTrigger>
-                <TabsTrigger value="optimizer">Optimizer</TabsTrigger>
+                {/* <TabsTrigger value="generator">Generator</TabsTrigger> */}
+                {/* Renaming for clarity since Random is hidden */}
+                <TabsTrigger value="generator">Targeted Gen</TabsTrigger>
+                <TabsTrigger value="optimizer">Lead Optimizer</TabsTrigger>
               </TabsList>
 
               <TabsContent value="generator" className="space-y-4 mt-4">
-                <Card>
+                {/* <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm flex items-center gap-2">
                       <Shuffle className="w-4 h-4 text-primary" />
@@ -240,7 +243,7 @@ const DesignStudio = () => {
                       Generate Random
                     </Button>
                   </CardContent>
-                </Card>
+                </Card> */}
 
                 <Card>
                   <CardHeader className="pb-3">

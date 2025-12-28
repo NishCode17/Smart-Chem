@@ -17,6 +17,12 @@ class OptimizeJobRequest(BaseModel):
     smiles: str
     target_qed: float = 0.8
     target_logp: float = 2.5
+
+class TargetedJobRequest(BaseModel):
+    num_molecules: int = 5
+    target_qed: float = 0.8
+    target_logp: float = 2.5
+    target_sas: float = 3.0
     
 # ---------------------------------------------------------
 # 1. POST /jobs/optimize
@@ -51,6 +57,39 @@ async def create_optimization_job(
     new_job = await db.jobs.insert_one(job.dict(by_alias=True))
     
     # 4. Return ID
+    return JobResponse(
+        job_id=str(new_job.inserted_id),
+        status=job.status,
+        created_at=job.created_at,
+        updated_at=job.updated_at
+    )
+
+@router.post("/generate/targeted", response_model=JobResponse, status_code=202)
+async def create_targeted_job(
+    req: TargetedJobRequest,
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """
+    Creates a new targeted generation job.
+    """
+    payload = {
+        "num_molecules": req.num_molecules,
+        "target_qed": req.target_qed,
+        "target_logp": req.target_logp,
+        "target_sas": req.target_sas
+    }
+
+    job = JobDB(
+        user_id=current_user.id,
+        task_type="GENERATE_TARGETED",
+        params=payload,
+        status="PENDING",
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow()
+    )
+    
+    new_job = await db.jobs.insert_one(job.dict(by_alias=True))
+    
     return JobResponse(
         job_id=str(new_job.inserted_id),
         status=job.status,
