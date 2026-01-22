@@ -1,115 +1,105 @@
-# SmartChem
+# SmartChem - Generative Drug Discovery Platform
 
-## Overview
-
-SmartChem is an application that demonstrates how **generative AI and machine learning** can be used for **molecular generation and optimization** in computational drug discovery. The project explores how ML models can generate novel molecular structures and evaluate them using standard chemical properties.
-
-The goal of SmartChem is to showcase the **end-to-end workflow** of molecule generation, evaluation, and optimization, combining machine learning with cheminformatics tools in a usable application.
+> **A Deep Learning powered platform for generating, optimizing, and evaluating novel drug-like molecules.**
 
 ---
 
-## Problem Context
+## 📖 Introduction
+**SmartChem** is a computational drug discovery tool designed to accelerate the "Lead Identification" phase of pharmaceutical research. 
 
-In early-stage drug discovery, researchers often need to explore a large chemical space to identify molecules with desirable properties such as drug-likeness and synthetic feasibility. This process is computationally intensive and difficult to do manually.
+Traditionally, finding new drug candidates is a manual, trial-and-error process. SmartChem automates this by using **Generative AI (Variational Autoencoders)** to explore the chemical space. It allows researchers to:
+1.  **Generate** completely new molecular structures.
+2.  **Predict** key properties (Solubility, Drug-likeness) instantly.
+3.  **Optimize** existing lead compounds to improve their efficacy.
 
-SmartChem addresses this by:
-- generating candidate molecules using a generative ML model,
-- evaluating their chemical properties,
-- allowing targeted optimization based on desired constraints.
-
----
-
-## System Architecture (Event-Driven Async)
-
-SmartChem uses a **Fully Asynchronous Event-Driven Architecture** to ensure high scalability and responsiveness. All heavy Machine Learning computations are decoupled from the user-facing API.
-
-- **FastAPI Gateway (API)**  
-  Acts as a lightweight "Receptionist". It authenticates users, validates inputs, and submits tasks to the job queue (`/jobs`). It **never** runs ML inference directly, ensuring the server stays responsive.
-
-- **ML Worker (Background Processor)**  
-  A dedicated process that consumes tasks (Targeted Gen, Lead Opt) from MongoDB. It claims jobs, runs the heavy VAE/RDKit math, and updates the database with results.
-  
-- **Shared ML Executor**
-  The "Brain" of the operation. A centralized module loaded by the Worker to perform the actual math.
-
-- **MongoDB (Queue & State)**  
-  Acts as the message broker. Jobs transition atomically from `PENDING` $\to$ `PROCESSING` $\to$ `COMPLETED`.
+The system is built as a **scalable, asynchronous web application**, ensuring that heavy Machine Learning computations do not block the user experience.
 
 ---
 
-## Workflow
+## 🏗️ System Architecture
 
-1. **Submission**: User sends request (e.g., "Optimize this Lead") -> API creates a Job Ticket -> Returns `job_id` ($< 100ms$).
-2. **Queueing**: The Job sits in MongoDB as `PENDING`.
-3. **Processing**: The Worker (looping in background) claims the job, locks it, and runs the ML algorithms (`~2s - 20s`).
-4. **Completion**: Worker saves results to DB.
-5. **Pollling**: Frontend automatically checks job status and displays results once `COMPLETED`.
+SmartChem follows an **Asynchronous Producer-Consumer** pattern to handle intensive ML workloads.
 
----
+```mermaid
+graph LR
+    User["User / Frontend"] -->|"1. POST /jobs/generate"| API["FastAPI Backend"]
+    API -->|"2. Create Ticket (PENDING)"| DB[("MongoDB")]
+    Worker["Background Worker (Python)"] -->|"3. Poll & Claim Job"| DB
+    Worker -->|"4. Run VAE Inference"| Model["ML Model (PyTorch)"]
+    Model -->|"5. Return Molecules"| Worker
+    Worker -->|"6. Save Results (COMPLETED)"| DB
+    User -->|"7. Polling / WebSocket"| API
+```
 
-## Machine Learning & Chemistry Components
-
-## Machine Learning & Chemistry Components
-
-SmartChem integrates machine learning and cheminformatics as follows:
-
-### 1. Generative Models
-- **Architecture**: Variational Autoencoder (VAE) trained on SELFIES representation.
-- **Latent Space**: 128-dimensional continuous space where similar molecules map to similar vectors.
-- **Property Predictor**: A feed-forward neural network (MLP) acts as a surrogate model to predict QED, LogP, and SAS directly from latent vectors ($z$).
-
-### 2. Optimization Algorithms
-- **Targeted Generation (Gradient Ascent)**:  
-  Starts from random noise ($z$) and iteratively updates the vector using gradients from the Property Predictor to maximize the match with user-defined targets (e.g., QED=0.9).
-  
-- **Lead Optimization (Neighborhood Search)**:  
-  Takes an existing molecule, encodes it to ($z_{lead}$), and samples a "cloud" of 200+ perturbations (Gaussian noise). These are decoded and filtered to find structural analogs with improved properties.
-
-### 3. Validation & Cheminformatics
-- **RDKit Integration**: Acts as the ground-truth validator.
-  - Filters invalid SMILES strings.
-  - Rejects molecules with only Carbon atoms (sanity check).
-  - Calculates accurate physicochemical properties for the final results.
+### Key Design Choices:
+*   **FastAPI:** Chosen for its high performance and native support for asynchronous programming (`async/await`).
+*   **MongoDB:** Used as both the database and the **Job Queue**. Its flexible schema allows storing complex molecular metadata without rigid tables.
+*   **Decoupled Worker:** The ML inference runs in a separate process. This ensures the API server remains responsive even if the model is processing a batch of 1,000 molecules.
 
 ---
 
-## How to Run
+## 🧠 The AI Engine (Machine Learning)
 
-### Prerequisites
-- Python 3.9+
-- MongoDB running locally or via URI
-- Node.js (for Frontend)
+At the core of SmartChem is a **Variational Autoencoder (VAE)** trained on the **Zinc-250k** dataset.
 
-### 1. Setup Environment
+### 1. Representation: SELFIES
+Instead of using fragile SMILES strings (which often break), we utilize **SELFIES** (Self-Referencing Embedded Strings).
+*   **Advantage:** Every generated SELFIES string corresponds to a valid molecular graph. 100% robustness.
+
+### 2. The Model Architecture
+*   **Encoder (1D-CNN):** Convolutional layers scan the chemical string to extract local structural patterns (e.g., benzene rings, functional groups).
+*   **Latent Space (128-dim):** The detailed molecule is compressed into a continuous numerical vector ($z$).
+*   **Decoder (GRU):** A Recurrent Neural Network reconstructs the molecule character-by-character from the latent vector.
+
+### 3. Optimization (Feedback Loop)
+We trained a secondary **Property Predictor (MLP)** that maps the latent vector $z$ directly to properties like **QED** (Drug-likeness) and **LogP** (Solubility).
+*   **Gradient Ascent:** We can mathematically "push" a molecule's vector in the direction of higher drug-likeness before decoding it, effectively "optimizing" the drug.
+
+---
+
+## 🛠️ Tech Stack
+
+### Backend & AI
+*   **Language:** Python 3.9+
+*   **Framework:** FastAPI
+*   **ML Libraries:** PyTorch, RDKit (Cheminformatics)
+*   **Data Processing:** SELFIES, Pandas, NumPy
+
+### Data & Infrastructure
+*   **Database:** MongoDB (NoSQL)
+*   **Task Queue:** Custom MongoDB-based Async Worker
+
+### Frontend
+*   **Framework:** React / Next.js (if applicable)
+*   **Visualization:** 3D Molecule Viewer
+
+---
+
+## 🚀 How to Run Locally
+
+### 1. Install Dependencies
 ```bash
-# Install dependencies
 pip install -r requirements.txt
 ```
 
-### 2. Start the API Server
+### 2. Start the Database
+Ensure MongoDB is running locally on port `27017`.
+
+### 3. Start the API Server
 ```bash
 uvicorn backend.main:app --reload
 ```
-*The API is now running at `http://localhost:8000`*
+*Server runs at `http://localhost:8000`*
 
-### 3. Start the ML Worker (New)
-In a new terminal window:
+### 4. Start the Async Worker
+In a **new terminal**, run the worker to process background jobs:
 ```bash
 python -m backend.worker
-```
-*The worker is now listening for optimization jobs.*
-
-### 4. Start Frontend
-```bash
-cd frontend
-npm run dev
 ```
 
 ---
 
-## Tech Stack
-
-- **Backend**: FastAPI
-- **Worker**: Python `asyncio` + MongoDB `find_one_and_update`
-- **Database**: MongoDB
-- **ML / Chemistry**: PyTorch, RDKit, SELFIES
+## 🧪 Project Highlights (For Interviewers)
+*   **Posterior Collapse Solved:** Implemented **KL-Divergence Annealing** to stabilize VAE training.
+*   **Robust Generation:** Transitioned from SMILES to **SELFIES** to guarantee 100% valid chemical outputs.
+*   **Scalable Design:** Implemented an **Atomic Job Queue** using MongoDB `find_one_and_update` to handle concurrency.
