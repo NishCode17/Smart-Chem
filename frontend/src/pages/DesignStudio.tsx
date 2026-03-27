@@ -90,50 +90,22 @@ const DesignStudio = () => {
 
   const handleTargetedGenerate = async () => {
     setIsGenerating(true);
-    toast.message("Targeted Job Submitted...");
     try {
-      const job = await api.createTargetedJob({
+      const res = await api.generateTargeted({
         num_molecules: 3,
         target_qed: targetQED,
         target_logp: targetLogP,
         target_sas: 3.0
       });
-
-      toast.message(`Job ID: ${job.job_id} - Queued`);
-      pollJob(job.job_id);
-
+      setGeneratedMolecules(mapResults(res.data));
+      toast.success(`Generated ${res.data.length} targeted molecules`);
     } catch (e: any) {
       toast.error(e.message || "Generation failed");
+    } finally {
       setIsGenerating(false);
     }
   };
 
-  // Async Polling Logic
-  const pollJob = async (jobId: string) => {
-    try {
-      const job = await api.getJobStatus(jobId);
-
-      if (job.status === "COMPLETED" && job.result) {
-        setGeneratedMolecules(mapResults(job.result)); // Note: result is list of dicts, unlike {data: []} wrapper
-        toast.success("Optimization Completed!");
-        setIsGenerating(false);
-        return;
-      }
-
-      if (job.status === "FAILED") {
-        toast.error(`Job Failed: ${job.error}`);
-        setIsGenerating(false);
-        return;
-      }
-
-      // Continue Polling
-      setTimeout(() => pollJob(jobId), 2000);
-
-    } catch (e) {
-      toast.error("Error checking job status");
-      setIsGenerating(false);
-    }
-  };
 
   const handleOptimize = async () => {
     if (!inputSmiles) {
@@ -141,23 +113,17 @@ const DesignStudio = () => {
       return;
     }
     setIsGenerating(true);
-    toast.message("Job Submitted to Worker...");
-
     try {
-      // 1. Submit Async Job
-      const job = await api.createJob({
+      const res = await api.optimizeLead({
         smiles: inputSmiles,
         target_qed: targetQED,
         target_logp: targetLogP
       });
-
-      toast.message(`Job ID: ${job.job_id} - Queued`);
-
-      // 2. Start Polling
-      pollJob(job.job_id);
-
+      setGeneratedMolecules(mapResults(res.data));
+      toast.success(`Found ${res.data.length} optimized variants`);
     } catch (e: any) {
-      toast.error(e.message || "Optimization submission failed");
+      toast.error(e.message || "Optimization failed");
+    } finally {
       setIsGenerating(false);
     }
   };

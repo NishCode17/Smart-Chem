@@ -117,3 +117,32 @@ def get_3d_structure(req: StructureRequest):
     mol_block = get_3d_mol_block(req.smiles)
     if not mol_block: raise HTTPException(400, "Could not generate 3D structure")
     return {"mol_block": mol_block}
+
+
+@app.post("/utils/analyze")
+def analyze_molecule(req: StructureRequest):
+    """
+    Analyzes a SMILES string and returns molecular properties, ADMET scores,
+    and toxicity alerts using RDKit.
+    """
+    if not req.smiles or not req.smiles.strip():
+        raise HTTPException(status_code=400, detail="SMILES string is required")
+
+    try:
+        mol = Chem.MolFromSmiles(req.smiles)
+        if mol is None:
+            raise HTTPException(status_code=400, detail="Invalid SMILES string — could not parse molecule")
+
+        result = calculate_properties(mol)
+
+        if not result.get("valid"):
+            raise HTTPException(status_code=400, detail=result.get("status", "Invalid molecule"))
+
+        print(f"✅ [Analyze] SMILES={req.smiles[:40]}... | QED={result.get('qed')} | LogP={result.get('logp')}")
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ [Analyze] Unexpected error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
