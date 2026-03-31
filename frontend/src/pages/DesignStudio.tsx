@@ -176,11 +176,11 @@ const DesignStudio = () => {
           {/* Left Panel - Controls */}
           <div className="lg:col-span-1 space-y-4">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="w-full grid grid-cols-2">
+              <TabsList className="w-full grid grid-cols-1">
                 {/* <TabsTrigger value="generator">Generator</TabsTrigger> */}
                 {/* Renaming for clarity since Random is hidden */}
                 <TabsTrigger value="generator">Targeted Gen</TabsTrigger>
-                <TabsTrigger value="optimizer">Lead Optimizer</TabsTrigger>
+                {/* <TabsTrigger value="optimizer">Lead Optimizer</TabsTrigger> */}
               </TabsList>
 
               <TabsContent value="generator" className="space-y-4 mt-4">
