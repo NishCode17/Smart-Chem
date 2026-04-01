@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-03-02T04:34:30Z",
+  "total_generated": 1000,
+  "valid_selfies": 947,
+  "passed_rdkit": 412,
+  "passed_lipinski": 284,
+  "validity_rate": 0.947,
+  "rdkit_pass_rate": 0.412,
+  "lipinski_rate": 0.284
+}

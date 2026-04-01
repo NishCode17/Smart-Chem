@@ -11,6 +11,28 @@ from models.predictor import PropertyPredictor
 from backend.optimizer import optimize_latent_vector
 from backend.chem_utils import get_mol_from_sequence, calculate_properties
 
+# Evaluation logging (best-effort: never crashes the inference pipeline)
+try:
+    from evaluation.eval_logger import log_validity_stats as _log_validity
+except ImportError:
+    _log_validity = None
+
+
+def _lipinski_pass(props: dict) -> bool:
+    """Returns True if the molecule satisfies Lipinski Rule-of-5."""
+    admet = props.get("admet_props", {})
+    mw   = admet.get("mw",  0)
+    logp = admet.get("logp", 0)
+    hbd  = admet.get("hbd",  0)
+    hba  = admet.get("hba",  0)
+    violations = sum([
+        mw   > 500,
+        logp > 5,
+        hbd  > 5,
+        hba  > 10,
+    ])
+    return violations <= 1
+
 # --- CONFIG ---
 MODE = "selfies"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -111,6 +133,13 @@ def run_lead_optimization(smiles: str):
     
     BATCH_SIZE = 200
     results = []
+
+    # ── Eval counters ──────────────────────────────────────────────────────
+    _ev_total = 0
+    _ev_valid_selfies = 0
+    _ev_rdkit = 0
+    _ev_lipinski = 0
+    # ───────────────────────────────────────────────────────────────────────
     
     with torch.no_grad():
         z_batch = z_lead.repeat(BATCH_SIZE, 1)
@@ -128,11 +157,17 @@ def run_lead_optimization(smiles: str):
         
         for i in range(BATCH_SIZE):
             seq = _decode_tensor(indices[i])
+            _ev_total += 1
             mol = get_mol_from_sequence(seq, mode=MODE)
+            if mol is not None:
+                _ev_valid_selfies += 1
             
             if _is_valid_candidate(mol):
+                _ev_rdkit += 1
                 props = calculate_properties(mol)
                 if props['valid'] and props['image']:
+                    if _lipinski_pass(props):
+                        _ev_lipinski += 1
                     score = props.get('score', 0)
                     s_out = props['smiles']
                     
@@ -144,6 +179,14 @@ def run_lead_optimization(smiles: str):
                             "properties": props, 
                             "score": score
                         })
+
+    # ── Emit validity stats ────────────────────────────────────────────────
+    if _log_validity:
+        try:
+            _log_validity(_ev_total, _ev_valid_selfies, _ev_rdkit, _ev_lipinski)
+        except Exception:
+            pass
+    # ───────────────────────────────────────────────────────────────────────
     
     results.sort(key=lambda x: x['score'], reverse=True)
     return results[:5]
@@ -156,21 +199,44 @@ def run_random_generation(num_molecules: int):
     
     results = []
     attempts = 0
+
+    # ── Eval counters ──────────────────────────────────────────────────────
+    _ev_total = 0
+    _ev_valid_selfies = 0
+    _ev_rdkit = 0
+    _ev_lipinski = 0
+    # ───────────────────────────────────────────────────────────────────────
+
     while len(results) < num_molecules and attempts < 100:
         attempts += 1
         with torch.no_grad():
             indices = _model.sample(num_molecules * 5, DEVICE, temperature=2.0)
             for i in range(len(indices)):
                 seq = _decode_tensor(indices[i])
+                _ev_total += 1
                 mol = get_mol_from_sequence(seq, mode=MODE)
+                if mol is not None:
+                    _ev_valid_selfies += 1
                 if _is_valid_candidate(mol):
+                    _ev_rdkit += 1
                     # Dedup check
                     if any(r['sequence'] == seq for r in results): continue 
 
                     props = calculate_properties(mol)
                     if props['valid'] and props['image']:
+                        if _lipinski_pass(props):
+                            _ev_lipinski += 1
                         results.append({"sequence": seq, "properties": props})
                         if len(results) >= num_molecules: break
+
+    # ── Emit validity stats ────────────────────────────────────────────────
+    if _log_validity:
+        try:
+            _log_validity(_ev_total, _ev_valid_selfies, _ev_rdkit, _ev_lipinski)
+        except Exception:
+            pass
+    # ───────────────────────────────────────────────────────────────────────
+
     return results
 
 def run_targeted_generation(num_molecules: int, target_qed: float, target_logp: float, target_sas: float):
@@ -188,20 +254,42 @@ def run_targeted_generation(num_molecules: int, target_qed: float, target_logp: 
     
     with torch.enable_grad():
         z = torch.randn(INTERNAL_BATCH, 128).to(DEVICE)
-        z_opt = optimize_latent_vector(z, _predictor, target_props)
+        # eval_log=True → emits per-step rows to optimization_log.csv
+        z_opt = optimize_latent_vector(z, _predictor, target_props, eval_log=True)
+
+    # ── Eval counters ──────────────────────────────────────────────────────
+    _ev_total = 0
+    _ev_valid_selfies = 0
+    _ev_rdkit = 0
+    _ev_lipinski = 0
+    # ───────────────────────────────────────────────────────────────────────
     
     with torch.no_grad():
         indices = _model.decode(z_opt, DEVICE, temperature=0.8)
         for i in range(len(indices)):
             seq = _decode_tensor(indices[i])
+            _ev_total += 1
             mol = get_mol_from_sequence(seq, mode=MODE)
+            if mol is not None:
+                _ev_valid_selfies += 1
             
             if _is_valid_candidate(mol):
+                _ev_rdkit += 1
                 props = calculate_properties(mol)
                 if props['valid'] and props['image']:
+                    if _lipinski_pass(props):
+                        _ev_lipinski += 1
                     score = props.get('score', 0)
                     props['status'] = f"🎯 Targeted (Score {score})"
                     results.append({"sequence": seq, "properties": props, "score": score})
+
+    # ── Emit validity stats ────────────────────────────────────────────────
+    if _log_validity:
+        try:
+            _log_validity(_ev_total, _ev_valid_selfies, _ev_rdkit, _ev_lipinski)
+        except Exception:
+            pass
+    # ───────────────────────────────────────────────────────────────────────
     
     # Sort
     results.sort(key=lambda x: x['score'], reverse=True)
