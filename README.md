@@ -103,3 +103,35 @@ python -m backend.worker
 *   **Posterior Collapse Solved:** Implemented KL-Divergence Annealing to stabilize VAE training.
 *   **Robust Generation:** Transitioned from SMILES to SELFIES to guarantee 100% valid chemical outputs.
 *   **Scalable Design:** Implemented an Atomic Job Queue using MongoDB `find_one_and_update` to handle concurrency.
+*   **Evaluation Pipeline:** Structured logging (`evaluation/`) captures per-epoch metrics, optimization trajectories, and validity statistics with automated plot generation.
+
+---
+
+## Project Structure
+
+```
+SmartChem/
+├── backend/            ← FastAPI app, ML executor, optimizer, chem utils
+├── models/             ← VAE and PropertyPredictor architectures
+├── checkpoints/        ← Trained model weights (.pth)
+├── data/
+│   ├── raw/            ← Source CSV datasets (ZINC-based)
+│   └── processed/      ← Tokenized tensors + vocab JSON
+├── evaluation/
+│   ├── eval_logger.py  ← Central logging API
+│   ├── logs/           ← CSV + JSON metric logs
+│   ├── plots/          ← Generated PNG plots
+│   ├── analysis/       ← plot_metrics.py
+│   └── README.md       ← Evaluation system documentation
+├── scripts/
+│   └── run_training.py ← Unified VAE + Predictor training entry-point
+├── frontend/           ← React + Vite UI
+├── misc/               ← Utility scripts (preprocessing, DB helpers)
+├── requirements.txt
+└── README.md
+```
+
+### Generating Evaluation Plots
+```bash
+python evaluation/analysis/plot_metrics.py
+```

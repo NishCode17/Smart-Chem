@@ -1,1 +1,55 @@
-.env 
+# ── Secrets ────────────────────────────────────────────────────────────────────
+.env
+*.env.*
+!.env.example
+
+# ── Python ─────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# ── Virtual environments ────────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── PyTorch / ML ───────────────────────────────────────────────────────────────
+# Keep production checkpoints; ignore temporary eval-run weights
+checkpoints/eval_run/
+*.pt.tmp
+
+# ── Jupyter ────────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ── Node / Frontend ────────────────────────────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.cache/
+
+# ── OS artefacts ───────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDE ────────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Database ───────────────────────────────────────────────────────────────────
+*.db
+*.sqlite3
+
+# ── Logs (keep evaluation/logs/ under version control — they are artefacts) ────
+*.log
