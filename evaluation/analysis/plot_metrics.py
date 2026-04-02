@@ -1,7 +1,7 @@
 """
 evaluation/analysis/plot_metrics.py
 
-Generates all publication-ready plots from evaluation CSV/JSON logs.
+Generates all plots from evaluation CSV/JSON logs.
 """
 
 import os
