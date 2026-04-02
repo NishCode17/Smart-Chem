@@ -4,14 +4,14 @@ import json
 import os
 import sys
 
-# Add parent directory to path to handle imports
+# Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from models.vae import VAE
 from backend.chem_utils import get_mol_from_sequence
 from rdkit import Chem
 
-# CONFIG
+# Config
 MODE = "selfies" 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 CHECKPOINT_DIR = "checkpoints"
@@ -40,16 +40,16 @@ def interpolate():
     print(f"Latent Space Interpolation (SLERP) Analysis")
     print(f"   Device: {DEVICE}")
 
-    # 1. Load Resources
+    # 1. Load resources
     with open(VOCAB_PATH, 'r') as f: vocab = json.load(f)
-    # Invert vocab for decoding
+    # Invert vocabulary
     idx_to_token = {v: k for k, v in vocab.items()}
-    # Special tokens handling
+    # Handle special tokens
     idx_to_token[0] = ""; idx_to_token[1] = ""; idx_to_token[2] = ""
     
     vocab_size = len(vocab) + 3
     
-    # 2. Load Model
+    # 2. Load model
     model = VAE(vocab_size=vocab_size, latent_dim=128).to(DEVICE)
     if not os.path.exists(MODEL_PATH):
         print(f"❌ Model not found at {MODEL_PATH}")
@@ -59,22 +59,22 @@ def interpolate():
     model.eval()
     print("VAE Model Loaded")
 
-    # 3. Load 2 Random Samples
+    # 3. Load random samples
     data = torch.load(DATA_PATH)
     idx1, idx2 = np.random.randint(0, len(data), 2)
     
     batch = torch.stack([data[idx1], data[idx2]]).to(DEVICE)
     
-    # 4. Get Latent Vectors (Encode)
+    # 4. Get latent vectors
     with torch.no_grad():
-        # Manually running encoder part (since we don't have separate encode fn)
+        # Encode input
         embedded = model.embedding(batch).permute(0, 2, 1)
         c1 = torch.nn.functional.relu(model.conv1(embedded))
         c2 = torch.nn.functional.relu(model.conv2(c1))
         c3 = torch.nn.functional.relu(model.conv3(c2))                 
         pooled = model.adaptive_pool(c3).squeeze(2)  
         mu = model.fc_mu(pooled)
-        # We use mu (mean) for deterministic interpolation
+        # Deterministic representation using mean
     
     z_start = mu[0].unsqueeze(0)
     z_end = mu[1].unsqueeze(0)
@@ -83,7 +83,7 @@ def interpolate():
     print(f"   Start Mol Index: {idx1}")
     print(f"   End Mol Index:   {idx2}")
 
-    # 5. Perform Interpolation
+    # 5. Perform interpolation
     steps = 10
     print(f"\n--- Interpolation Path ({steps} steps) ---")
     
@@ -93,15 +93,15 @@ def interpolate():
         
         # Decode
         with torch.no_grad():
-            decoded_indices = model.decode(z_interp, DEVICE, temperature=0.1) # Low temp for stability
+            decoded_indices = model.decode(z_interp, DEVICE, temperature=0.1)
         
-        # Convert to String
+        # Convert to string
         seq = ""
         for idx in decoded_indices[0]:
             if idx.item() == 2: break # EOS
             if idx.item() > 2: seq += idx_to_token.get(idx.item(), "")
             
-        # Check Validity
+        # Check validity
         mol = get_mol_from_sequence(seq, mode=MODE)
         valid = "Valid" if mol else "Invalid"
         smiles = Chem.MolToSmiles(mol) if mol else "N/A"

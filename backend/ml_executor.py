@@ -5,13 +5,13 @@ import sys
 import selfies as sf
 from fastapi import HTTPException 
 
-# Internal Project Imports
+# Internal project imports
 from models.vae import VAE
 from models.predictor import PropertyPredictor
 from backend.optimizer import optimize_latent_vector
 from backend.chem_utils import get_mol_from_sequence, calculate_properties
 
-# Evaluation logging (best-effort: never crashes the inference pipeline)
+# Evaluation logging
 try:
     from evaluation.eval_logger import log_validity_stats as _log_validity
 except ImportError:
@@ -33,14 +33,14 @@ def _lipinski_pass(props: dict) -> bool:
     ])
     return violations <= 1
 
-# --- CONFIG ---
+# Config
 MODE = "selfies"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 VAE_CHECKPOINT = "checkpoints/vae_selfies_best.pth"
 PREDICTOR_CHECKPOINT = "checkpoints/multi_predictor.pth"
 VOCAB_PATH = f"data/processed/{MODE}_vocab.json"
 
-# --- GLOBAL STATE ---
+# Global state
 _model = None
 _predictor = None
 _idx_to_token = {}
@@ -48,8 +48,7 @@ _token_to_idx = {}
 
 def load_resources():
     """
-    Loads VAE, Predictor, and Vocab into global state.
-    Idempotent: checks if already loaded.
+    Loads VAE, predictor, and vocabulary.
     """
     global _model, _predictor, _idx_to_token, _token_to_idx
     
@@ -64,7 +63,7 @@ def load_resources():
         
     with open(VOCAB_PATH, 'r') as f: vocab = json.load(f)
     
-    # +3 SHIFT
+    # Shift vocabs
     _idx_to_token = {v + 3: k for k, v in vocab.items()}
     _idx_to_token[0] = ""; _idx_to_token[1] = ""; _idx_to_token[2] = ""
     _token_to_idx = {k: v + 3 for k, v in vocab.items()}
@@ -84,7 +83,7 @@ def load_resources():
         _predictor.eval()
         print("✅ Predictor Loaded")
 
-# --- INTERNAL HELPERS ---
+# Internal helpers
 def _decode_tensor(tensor_seq):
     tokens = []
     for idx in tensor_seq:
@@ -116,12 +115,11 @@ def _is_valid_candidate(mol):
         return False
     return True
 
-# --- EXPORTED LOGIC ---
+# Exported logic
 
 def run_lead_optimization(smiles: str):
     """
-    Core Logic for OPTIMIZE_LEAD task.
-    Returns list of dicts: {sequence, properties, score}
+    Core logic for OPTIMIZE_LEAD task.
     """
     if _model is None: load_resources()
     
@@ -134,17 +132,16 @@ def run_lead_optimization(smiles: str):
     BATCH_SIZE = 200
     results = []
 
-    # ── Eval counters ──────────────────────────────────────────────────────
+    # Eval counters
     _ev_total = 0
     _ev_valid_selfies = 0
     _ev_rdkit = 0
     _ev_lipinski = 0
-    # ───────────────────────────────────────────────────────────────────────
     
     with torch.no_grad():
         z_batch = z_lead.repeat(BATCH_SIZE, 1)
         
-        # Cloud Generation
+        # Generation
         noise_close = torch.randn(BATCH_SIZE // 2, 128).to(DEVICE) * 0.1
         noise_far = torch.randn(BATCH_SIZE // 2, 128).to(DEVICE) * 0.3
         z_batch[:BATCH_SIZE//2] += noise_close
@@ -180,32 +177,30 @@ def run_lead_optimization(smiles: str):
                             "score": score
                         })
 
-    # ── Emit validity stats ────────────────────────────────────────────────
+    # Emit validity stats
     if _log_validity:
         try:
             _log_validity(_ev_total, _ev_valid_selfies, _ev_rdkit, _ev_lipinski)
         except Exception:
             pass
-    # ───────────────────────────────────────────────────────────────────────
     
     results.sort(key=lambda x: x['score'], reverse=True)
     return results[:5]
 
 def run_random_generation(num_molecules: int):
     """
-    Core Logic for GENERATE_RANDOM task.
+    Core logic for GENERATE_RANDOM task.
     """
     if _model is None: load_resources()
     
     results = []
     attempts = 0
 
-    # ── Eval counters ──────────────────────────────────────────────────────
+    # Eval counters
     _ev_total = 0
     _ev_valid_selfies = 0
     _ev_rdkit = 0
     _ev_lipinski = 0
-    # ───────────────────────────────────────────────────────────────────────
 
     while len(results) < num_molecules and attempts < 100:
         attempts += 1
@@ -219,7 +214,7 @@ def run_random_generation(num_molecules: int):
                     _ev_valid_selfies += 1
                 if _is_valid_candidate(mol):
                     _ev_rdkit += 1
-                    # Dedup check
+                    # Deduplication
                     if any(r['sequence'] == seq for r in results): continue 
 
                     props = calculate_properties(mol)
@@ -229,19 +224,18 @@ def run_random_generation(num_molecules: int):
                         results.append({"sequence": seq, "properties": props})
                         if len(results) >= num_molecules: break
 
-    # ── Emit validity stats ────────────────────────────────────────────────
+    # Emit validity stats
     if _log_validity:
         try:
             _log_validity(_ev_total, _ev_valid_selfies, _ev_rdkit, _ev_lipinski)
         except Exception:
             pass
-    # ───────────────────────────────────────────────────────────────────────
 
     return results
 
 def run_targeted_generation(num_molecules: int, target_qed: float, target_logp: float, target_sas: float):
     """
-    Core Logic for GENERATE_TARGETED task.
+    Core logic for GENERATE_TARGETED task.
     """
     if _model is None: load_resources()
     if _predictor is None: raise ValueError("Predictor not loaded")
@@ -249,7 +243,7 @@ def run_targeted_generation(num_molecules: int, target_qed: float, target_logp: 
     target_props = [target_qed, target_logp, target_sas]
     results = []
     
-    # 1. Generate Candidate Pool
+    # 1. Generate candidate pool
     INTERNAL_BATCH = 300 
     
     with torch.enable_grad():
@@ -257,12 +251,11 @@ def run_targeted_generation(num_molecules: int, target_qed: float, target_logp: 
         # eval_log=True → emits per-step rows to optimization_log.csv
         z_opt = optimize_latent_vector(z, _predictor, target_props, eval_log=True)
 
-    # ── Eval counters ──────────────────────────────────────────────────────
+    # Eval counters
     _ev_total = 0
     _ev_valid_selfies = 0
     _ev_rdkit = 0
     _ev_lipinski = 0
-    # ───────────────────────────────────────────────────────────────────────
     
     with torch.no_grad():
         indices = _model.decode(z_opt, DEVICE, temperature=0.8)
@@ -283,13 +276,12 @@ def run_targeted_generation(num_molecules: int, target_qed: float, target_logp: 
                     props['status'] = f"🎯 Targeted (Score {score})"
                     results.append({"sequence": seq, "properties": props, "score": score})
 
-    # ── Emit validity stats ────────────────────────────────────────────────
+    # Emit validity stats
     if _log_validity:
         try:
             _log_validity(_ev_total, _ev_valid_selfies, _ev_rdkit, _ev_lipinski)
         except Exception:
             pass
-    # ───────────────────────────────────────────────────────────────────────
     
     # Sort
     results.sort(key=lambda x: x['score'], reverse=True)

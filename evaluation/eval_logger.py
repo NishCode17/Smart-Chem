@@ -1,13 +1,7 @@
 """
 evaluation/eval_logger.py
-=========================
-Central, production-grade evaluation logger for SmartChem.
 
-Design principles:
-  - Zero dependencies on ML model code (pure stdlib + csv + json)
-  - Thread-safe append-only writes for all CSV logs
-  - Idempotent header handling (writes header only on first write)
-  - All paths are relative to project root so the module is portable
+Evaluation logger for SmartChem.
 """
 
 import os
@@ -16,19 +10,19 @@ import json
 import threading
 from datetime import datetime
 
-# ── Directory layout ──────────────────────────────────────────────────────────
+# Directory layout
 _ROOT = os.path.join(os.path.dirname(__file__))  # evaluation/
 LOGS_DIR = os.path.join(_ROOT, "logs")
 PLOTS_DIR = os.path.join(_ROOT, "plots")
 
-# ── Log file paths ─────────────────────────────────────────────────────────────
+# Log file paths
 VAE_LOG        = os.path.join(LOGS_DIR, "vae_training_log.csv")
 PREDICTOR_LOG  = os.path.join(LOGS_DIR, "predictor_log.csv")
 OPTIM_LOG      = os.path.join(LOGS_DIR, "optimization_log.csv")
 VALIDITY_JSON  = os.path.join(LOGS_DIR, "validity_stats.json")
 PREDICTOR_TRUE_PRED_LOG = os.path.join(LOGS_DIR, "predictor_true_pred_log.csv")
 
-# ── Internal helpers ───────────────────────────────────────────────────────────
+# Internal helpers
 _lock = threading.Lock()
 
 
@@ -41,7 +35,7 @@ def _ensure_dirs():
 def _append_csv(filepath: str, row: dict, fieldnames: list):
     """
     Thread-safe append of one row to a CSV file.
-    Writes the header automatically on the first call (i.e. when the file is new/empty).
+    Writes the header automatically on the first call.
     """
     _ensure_dirs()
     with _lock:
@@ -53,7 +47,7 @@ def _append_csv(filepath: str, row: dict, fieldnames: list):
             writer.writerow(row)
 
 
-# ── Public API ─────────────────────────────────────────────────────────────────
+# Public API
 
 def log_vae_epoch(epoch: int, bce_loss: float, kl_loss: float, total_loss: float):
     """

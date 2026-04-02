@@ -31,13 +31,11 @@ def train_predictor():
     vae.load_state_dict(torch.load(VAE_CHECKPOINT, map_location=DEVICE))
     vae.eval()
 
-    # 2. Generate Training Data
+    # 2. Generate training data
     print("   Generating Property Labels from FULL dataset...")
     raw_data = torch.load(DATA_PATH)
-    # NO LIMIT - Use all data for maximum accuracy
-    # raw_data = raw_data[:15000] <--- REMOVED
     
-    # Batch size 64 for speed
+    # Batch size 64
     temp_loader = DataLoader(TensorDataset(raw_data), batch_size=64)
     
     X_train = []
@@ -65,8 +63,7 @@ def train_predictor():
                 if mol:
                     q = QED.qed(mol)
                     l = Descriptors.MolLogP(mol)
-                    # Use a cap for SAS/Complexity so it doesn't explode gradients
-                    s = rdMolDescriptors.CalcNumRings(mol) + rdMolDescriptors.CalcNumRotatableBonds(mol)
+                    # Calculate SAS
                     
                     X_train.append(mu[i].cpu())
                     y_train.append([q, l, s])
@@ -76,17 +73,17 @@ def train_predictor():
     
     print(f"   Dataset Ready: {len(X_train)} samples")
 
-    # 3. Train with Weighted Loss
+    # 3. Train predictor
     predictor = PropertyPredictor().to(DEVICE)
     optimizer = optim.Adam(predictor.parameters(), lr=1e-3)
 
-    # Weights: Focus heavily on QED (Index 0)
+    # Loss weights
     loss_weights = torch.tensor([10.0, 1.0, 1.0]).to(DEVICE) 
 
     predictor.train()
     print("   Starting Training Loop...")
     
-    # 100 Epochs for deep learning
+    # Training loop
     for epoch in range(101): 
         optimizer.zero_grad()
         preds = predictor(X_train)

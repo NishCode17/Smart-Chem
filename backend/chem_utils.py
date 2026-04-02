@@ -6,7 +6,7 @@ import base64
 from io import BytesIO
 import math
 
-# --- Initialize Filter Catalogs (Singleton) ---
+# Filter Catalogs (Singleton)
 _filters_loaded = False
 _catalog = None
 
@@ -30,7 +30,7 @@ def get_3d_mol_block(smiles):
         if mol is None: return None
         
         mol = Chem.AddHs(mol)
-        # Generate 3D Conformation
+        # Generate 3D conformation
         params = AllChem.ETKDGv3()
         params.useRandomCoords = True
         AllChem.EmbedMolecule(mol, params)
@@ -56,7 +56,7 @@ def get_mol_from_sequence(seq, mode="selfies"):
 
 def calculate_admet(mol):
     """
-    Calculates detailed ADMET-like properties for the 'Lab View'.
+    Calculates detailed ADMET properties.
     """
     if mol is None: return {}
     
@@ -66,10 +66,10 @@ def calculate_admet(mol):
     hbd = Descriptors.NumHDonors(mol)     # Target: < 5
     hba = Descriptors.NumHAcceptors(mol)  # Target: < 10
     
-    # 2. Absorption / Permeability
+    # 2. Absorption
     tpsa = Descriptors.TPSA(mol)          # Target: < 140 for good absorption
     
-    # 3. Safety / Complexity
+    # 3. Size / Complexity
     rotatable = Descriptors.NumRotatableBonds(mol)
     rings = rdMolDescriptors.CalcNumRings(mol)
     
@@ -95,8 +95,7 @@ def calculate_admet(mol):
 
 def estimate_admet_scores(mol):
     """
-    Estimates 0-1 scores for ADMET properties based on functional heuristics.
-    These are approximations, not clinical predictions.
+    Estimates 0-1 scores for ADMET properties.
     """
     if mol is None: return {}
 
@@ -108,23 +107,18 @@ def estimate_admet_scores(mol):
     # TPSA < 140 is generally good. Sigmoid decay.
     absorption = 1.0 / (1.0 + math.exp((tpsa - 140) / 15))
     
-    # 2. Distribution (BBB Penetration)
-    # TPSA < 90 and LogP 2-4 is ideal. 
-    # Gaussian-ish peak around LogP ~3
+    # 2. Distribution
     bbb_score = math.exp(-0.5 * ((logp - 3.0) / 1.5)**2)
     if tpsa > 90: bbb_score *= 0.5
     
-    # 3. Metabolism (CYP Stability - crude proxy)
-    # High lipophilicity often correlates with clearance.
-    metabolism = 1.0 / (1.0 + math.exp((logp - 4.0) / 1.0)) # Stable if hydrophilic
+    # 3. Metabolism
+    metabolism = 1.0 / (1.0 + math.exp((logp - 4.0) / 1.0))
     
-    # 4. Excretion (Half-life proxy)
-    # Smaller molecules often cleared faster/renally.
+    # 4. Excretion
     excretion = 1.0 / (1.0 + math.exp((mw - 400) / 100))
     
-    # 5. Toxicity (General)
-    # High LogP (>5) is toxic.
-    toxicity_score = 1.0 / (1.0 + math.exp(-(logp - 5.0))) # Higher is more toxic
+    # 5. Toxicity
+    toxicity_score = 1.0 / (1.0 + math.exp(-(logp - 5.0)))
     
     return {
         "absorption": round(absorption, 2),
@@ -163,11 +157,10 @@ def check_toxicity_alerts(mol):
         "details": alerts[:5] # Top 5 alerts
     }
 
-# --- Helper Functions for Scoring ---
+# Scoring
 def get_longest_carbon_chain_length(mol):
     """
-    Calculates the length of the longest linear aliphatic carbon chain using RDKit match.
-    Logic: Find generic aliphatic chains and return the max length.
+    Calculates the length of the longest linear aliphatic carbon chain.
     """
     try:
         # Matches any sequence of aliphatic carbons (not in aromatic rings)
@@ -185,8 +178,7 @@ def get_longest_carbon_chain_length(mol):
 
 def score_molecule(mol, props):
     """
-    Calculates a fitness score for the molecule based on soft constraints.
-    Base = 1.0, penalties/rewards apply.
+    Calculates a fitness score for the molecule.
     """
     score = 1.0
     
@@ -196,19 +188,19 @@ def score_molecule(mol, props):
     qed = props.get('qed', 0.0)
     rings = props.get('aromatic_rings', 0)
     
-    # 1. Penalty: Long Aliphatic Chain (Worm-like)
+    # 1. Penalty: Long aliphatic chain
     if longest_chain > 7:
         score -= 0.15
         
-    # 2. Penalty: Bad LogP (solubility/permeability)
+    # 2. Penalty: LogP
     if logp < -1 or logp > 5:
         score -= 0.2
         
-    # 3. Reward: Good QED (Drug-likeness)
+    # 3. Reward: QED
     if qed > 0.5:
         score += 0.2
         
-    # 4. Reward: Aromatic Rings (Stability/Bioactivity)
+    # 4. Reward: Aromatic rings
     if rings >= 1:
         score += 0.25
         
@@ -216,7 +208,7 @@ def score_molecule(mol, props):
 
 def calculate_properties(mol):
     """
-    Standard properties + Image for cards + New Scoring System
+    Calculate molecule properties and generate image.
     """
     if mol is None:
         return {"valid": False, "image": None, "status": "Error"}
@@ -230,13 +222,13 @@ def calculate_properties(mol):
         longest_chain = get_longest_carbon_chain_length(mol)
         aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
         
-        # SANITY CHECK: Reject extreme LogP (e.g. -50) (Re-enabled/Kept)
+        # Filter extreme LogP
         if logp < -5 or logp > 8:
              return {"valid": False, "status": "Extreme LogP"}
 
         admet = calculate_admet(mol)
         
-        # --- SCORING ---
+        # Scoring
         temp_props = {
             "longest_chain": longest_chain,
             "logp": logp,

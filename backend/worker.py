@@ -11,17 +11,15 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from backend.database import db
 import backend.ml_executor as ml_exec
 
-# -----------------------------------------------------------------------------
-# WORKER LOOP
-# -----------------------------------------------------------------------------
+# Worker process
 async def worker_loop():
     # Load resources via shared executor
     ml_exec.load_resources()
-    print("🚀 [Worker] Looking for jobs...")
+    print("[Worker] Looking for jobs...")
     
     while True:
         try:
-            # Atomic Claim
+            # Claim job
             job = await db.jobs.find_one_and_update(
                 {"status": "PENDING"},
                 {"$set": {"status": "PROCESSING", "updated_at": datetime.utcnow()}},
@@ -37,12 +35,12 @@ async def worker_loop():
             print(f"🔄 Processing Job {job_id} ({job['task_type']})")
             
             try:
-                # ROUTE TASK
+                # Route task
                 result = None
                 params = job['params']
                 
                 if job['task_type'] == "OPTIMIZE_LEAD":
-                    # DELEGATE TO EXECUTOR
+                    # Execute task
                     result = ml_exec.run_lead_optimization(smiles=params['smiles'])
                 
                 elif job['task_type'] == "GENERATE_TARGETED":
@@ -56,7 +54,7 @@ async def worker_loop():
                 else:
                     raise ValueError(f"Unknown Task: {job['task_type']}")
                     
-                # SUCCESS
+                # Update status on success
                 await db.jobs.update_one(
                     {"_id": job_id},
                     {"$set": {

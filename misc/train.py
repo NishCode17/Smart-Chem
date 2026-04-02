@@ -7,11 +7,11 @@ import os
 from tqdm import tqdm
 from models.vae import VAE
 
-# --- PRO CONFIGURATION ---
+# Configuration
 MODE = "selfies" 
-BATCH_SIZE = 64  # Keep 64 for RTX 2050 (Safe for 4GB VRAM)
-LR = 5e-4        # Lower learning rate for stable, long-term learning
-EPOCHS = 100     # <--- THE BIG CHANGE
+BATCH_SIZE = 64
+LR = 5e-4
+EPOCHS = 100
 LATENT_DIM = 128
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -32,7 +32,7 @@ def loss_function(recon_x, x, mu, logvar, kld_weight):
 def train():
     print(f"🚀 Launching PRO Training Sequence on {DEVICE}")
     
-    # Load Data
+    # Load data
     vocab_path = f"{PROCESSED_DIR}/{MODE}_vocab.json"
     data_path = f"{PROCESSED_DIR}/train_{MODE}.pt"
     
@@ -40,7 +40,7 @@ def train():
     vocab_size = len(vocab) + 3
     
     data = torch.load(data_path)
-    # Shuffle is crucial for long training
+    # Shuffle dataset
     dataset = TensorDataset(data)
     loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True, drop_last=True)
     
@@ -50,7 +50,7 @@ def train():
     model = VAE(vocab_size=vocab_size, latent_dim=LATENT_DIM).to(DEVICE)
     optimizer = optim.Adam(model.parameters(), lr=LR)
     
-    # Learning Rate Scheduler (Slows down as we get smarter)
+    # Learning rate scheduler
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=5, factor=0.5)
 
     best_loss = float('inf')
@@ -58,7 +58,7 @@ def train():
     
     for epoch in range(1, EPOCHS + 1):
         total_loss = 0
-        # Slower annealing for 100 epochs (full KL weight at epoch 20)
+        # KL annealing
         kld_weight = min(1.0, epoch / 20)
         
         progress = tqdm(loader, desc=f"Epoch {epoch}/{EPOCHS}", leave=False)
@@ -71,7 +71,7 @@ def train():
             loss, bce, kld = loss_function(recon_x, x, mu, logvar, kld_weight)
             
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 5.0) # Prevent crashes
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 5.0)
             optimizer.step()
             
             total_loss += loss.item()
@@ -79,19 +79,19 @@ def train():
 
         avg_loss = total_loss / len(loader.dataset)
         
-        # Update LR based on performance
+        # Update LR
         current_lr = optimizer.param_groups[0]['lr']
         scheduler.step(avg_loss)
         
         print(f"Epoch {epoch}: Loss={avg_loss:.4f} | LR={current_lr:.6f}")
         
-        # Save Best Model Logic
+        # Save best model
         if avg_loss < best_loss:
             best_loss = avg_loss
             torch.save(model.state_dict(), f"{CHECKPOINT_DIR}/vae_{MODE}_best.pth")
             print(f"   ⭐ New Best Model Saved! (Loss: {best_loss:.4f})")
             
-        # Regular Backup
+        # Regular backup
         if epoch % 10 == 0:
              torch.save(model.state_dict(), f"{CHECKPOINT_DIR}/vae_{MODE}_epoch_{epoch}.pth")
 

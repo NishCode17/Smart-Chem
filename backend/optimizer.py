@@ -3,9 +3,8 @@ import torch
 def optimize_latent_vector(z, predictor, target_props, steps=75, lr=0.02,
                            eval_log=False):
     """
-    Lead Optimization Mode.
-    Wider Clamp [-3.0, 3.0] allows existing molecules to survive optimization
-    without being crushed, while still preventing explosion.
+    Lead optimization mode.
+    Maintains latent vector values within [-3.0, 3.0] to preserve molecule validity.
 
     Parameters
     ----------
@@ -20,10 +19,10 @@ def optimize_latent_vector(z, predictor, target_props, steps=75, lr=0.02,
     optimizer = torch.optim.Adam([z_opt], lr=lr)
 
     target_tensor = torch.tensor(target_props).float().to(z.device)
-    # Weights: [QED=10, LogP=1, SAS=1]
+    # Weights
     weights = torch.tensor([10.0, 1.0, 1.0]).to(z.device)
 
-    # Lazy import so that optimizer.py stays independent of eval infrastructure
+    # Lazy import
     if eval_log:
         try:
             from evaluation.eval_logger import log_optimization_step
@@ -34,11 +33,11 @@ def optimize_latent_vector(z, predictor, target_props, steps=75, lr=0.02,
         optimizer.zero_grad()
         preds = predictor(z_opt)
 
-        # Target Loss
+        # Target loss
         diff_sq = (preds - target_tensor.repeat(z.shape[0], 1)) ** 2
         weighted_dist = (diff_sq * weights).sum(dim=1).mean()
 
-        # Anchor Loss (Stay close to the lead molecule!)
+        # Anchor loss
         dist_from_seed = torch.norm(z_opt - z, p=2)
         anchor_penalty = 0.5 * dist_from_seed
 
@@ -46,13 +45,11 @@ def optimize_latent_vector(z, predictor, target_props, steps=75, lr=0.02,
         loss.backward()
         optimizer.step()
 
-        # WIDENED CLAMP (The Fix)
-        # [-3, 3] covers 99.7% of the latent space.
-        # 1.5 was too tight and destroying valid leads.
+        # Clamp values
         with torch.no_grad():
             z_opt.data.clamp_(-3.0, 3.0)
 
-        # ── Evaluation logging (non-blocking, best-effort) ──────────────────
+        # Evaluation logging
         if eval_log:
             with torch.no_grad():
                 mean_preds = predictor(z_opt).mean(dim=0)   # shape [3]
@@ -67,6 +64,6 @@ def optimize_latent_vector(z, predictor, target_props, steps=75, lr=0.02,
                     l2_distance=l2_dist,
                 )
             except Exception as _log_err:
-                pass  # Never let logging crash the optimization
+                pass
 
     return z_opt.detach()

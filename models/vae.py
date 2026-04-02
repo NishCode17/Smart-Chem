@@ -43,16 +43,15 @@ class VAE(nn.Module):
         return self.fc_out(output), mu, logvar
 
     def sample(self, num_samples, device, temperature=1.5):
-        """Random Generation with Diversity"""
+        """Random generation"""
         z = torch.randn(num_samples, self.latent_dim).to(device)
         return self._decode_loop(z, device, temperature)
 
     def decode(self, z, device, temperature=0.8):
-        """Targeted Generation with Stability"""
+        """Targeted generation"""
         return self._decode_loop(z, device, temperature)
 
     def _decode_loop(self, z, device, temperature):
-        # Shared logic to prevent code duplication
         hidden = self.decoder_input(z).unsqueeze(0).repeat(3, 1, 1)
         input_seq = torch.ones(z.shape[0], 1).long().to(device)
         generated_indices = []
@@ -62,7 +61,6 @@ class VAE(nn.Module):
             output, hidden = self.gru(embedded, hidden)
             logits = self.fc_out(output)
             
-            # FORCE SAMPLING (Fixes Carbon Chains)
             probs = F.softmax(logits.squeeze(1) / temperature, dim=1)
             next_token = torch.multinomial(probs, 1)
             

@@ -1,22 +1,7 @@
 """
 evaluation/analysis/plot_metrics.py
-====================================
-Stand-alone analysis script — generates all publication-ready plots from the
-evaluation CSV/JSON logs produced during SmartChem training and inference.
 
-Usage
------
-Run from the project root:
-
-    python evaluation/analysis/plot_metrics.py
-
-All plots are saved to:  evaluation/plots/
-
-Dependencies
-------------
-    pip install pandas matplotlib
-
-No ML libraries (torch / rdkit / selfies) are required.
+Generates all publication-ready plots from evaluation CSV/JSON logs.
 """
 
 import os
@@ -33,7 +18,7 @@ from matplotlib.lines import Line2D
 matplotlib.use("Agg")          # Non-interactive backend — safe for servers
 warnings.filterwarnings("ignore")
 
-# ── Resolve paths relative to THIS file (works wherever it's called from) ──────
+# Resolve paths relative to this file
 _HERE   = os.path.dirname(os.path.abspath(__file__))          # evaluation/analysis/
 _EVAL   = os.path.dirname(_HERE)                              # evaluation/
 LOGS    = os.path.join(_EVAL, "logs")
@@ -41,7 +26,7 @@ PLOTS   = os.path.join(_EVAL, "plots")
 
 os.makedirs(PLOTS, exist_ok=True)
 
-# ── Shared Style Config ────────────────────────────────────────────────────────
+# Shared Style Config
 STYLE = {
     "figure.facecolor":  "#0d1117",
     "axes.facecolor":    "#161b22",
@@ -93,7 +78,7 @@ def _savefig(fig, path: str, label: str):
     print(f"  ✅ Saved → {os.path.relpath(path)}")
 
 
-# ── 1. VAE Loss Curve ──────────────────────────────────────────────────────────
+# 1. VAE Loss Curve
 def plot_vae_loss():
     """
     Reads  : evaluation/logs/vae_training_log.csv
@@ -155,7 +140,7 @@ def _generate_placeholder_vae_loss(out: str):
     _savefig(fig, out, "VAE Loss (placeholder)")
 
 
-# ── 2. Predictor Scatter ───────────────────────────────────────────────────────
+# 2. Predictor Scatter
 def plot_predictor_scatter():
     """
     Reads  : evaluation/logs/predictor_true_pred_log.csv  (preferred)
@@ -223,7 +208,7 @@ def _simulate_predictor_data():
     return pd.DataFrame({"true_qed": true_qed, "pred_qed": pred_qed})
 
 
-# ── 3. Optimization Curve ──────────────────────────────────────────────────────
+# 3. Optimization Curve
 def plot_optimization_curve():
     """
     Reads  : evaluation/logs/optimization_log.csv
@@ -278,7 +263,7 @@ def _simulate_optimization_data():
     return pd.DataFrame({"step": steps, "qed": qed, "l2_distance": l2})
 
 
-# ── 4. Validity Bar Chart ──────────────────────────────────────────────────────
+# 4. Validity Bar Chart
 def plot_validity_stats():
     """
     Reads  : evaluation/logs/validity_stats.json
@@ -346,7 +331,7 @@ def plot_validity_stats():
     _savefig(fig, out, "Validity Stats")
 
 
-# ── 5. Predictor Training Loss (bonus) ────────────────────────────────────────
+# 5. Predictor Training Loss
 def plot_predictor_loss():
     """
     Reads  : evaluation/logs/predictor_log.csv
@@ -381,7 +366,7 @@ def plot_predictor_loss():
     _savefig(fig, out, "Predictor Loss")
 
 
-# ── Main ───────────────────────────────────────────────────────────────────────
+# Main
 def main():
     _apply_style()
     print("\n🔬 SmartChem  —  Evaluation Plot Generator")

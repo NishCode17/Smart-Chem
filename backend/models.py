@@ -3,9 +3,7 @@ from typing import Optional, List, Dict, Any
 from bson import ObjectId
 from datetime import datetime
 
-# -----------------------------------------------------
-# Helper: Pydantic v2 compatible ObjectId wrapper
-# -----------------------------------------------------
+# Pydantic v2 compatible ObjectId wrapper
 class PyObjectId(ObjectId):
     @classmethod
     def __get_validators__(cls):
@@ -29,9 +27,7 @@ class PyObjectId(ObjectId):
         return json_schema
 
 
-# -----------------------------------------------------
 # Base Mongo Document
-# -----------------------------------------------------
 class MongoBaseModel(BaseModel):
     # ❗ No "_id" defined here
     model_config = ConfigDict(
@@ -42,9 +38,7 @@ class MongoBaseModel(BaseModel):
 
 
 
-# -----------------------------------------------------
-# USER MODELS
-# -----------------------------------------------------
+# User Models
 class UserCreate(BaseModel):
     username: str
     email: EmailStr
@@ -64,9 +58,7 @@ class UserResponse(BaseModel):
     email: EmailStr
 
 
-# -----------------------------------------------------
-# PROJECT MODELS
-# -----------------------------------------------------
+# Project Models
 class ProjectCreate(BaseModel):
     name: str
     description: Optional[str] = None
@@ -88,9 +80,7 @@ class ProjectResponse(BaseModel):
     created_at: datetime
 
 
-# -----------------------------------------------------
-# MOLECULE MODELS
-# -----------------------------------------------------
+# Molecule Models
 class MolProperties(BaseModel):
     logp: float
     qed: float
@@ -146,9 +136,7 @@ class MoleculeResponse(BaseModel):
     created_at: datetime
 
 
-# -----------------------------------------------------
-# TOKEN MODELS
-# -----------------------------------------------------
+# Token Models
 class Token(BaseModel):
     access_token: str
     refresh_token: str
@@ -159,9 +147,7 @@ class TokenPayload(BaseModel):
     sub: str
     exp: int
 
-# -----------------------------------------------------
-# JOB MODELS
-# -----------------------------------------------------
+# Job Models
 class JobCreate(BaseModel):
     task_type: str  # one of: GENERATE_RANDOM, GENERATE_TARGETED, OPTIMIZE_LEAD
     params: Dict[str, Any]

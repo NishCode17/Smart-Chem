@@ -20,7 +20,7 @@ from backend.chem_utils import get_mol_from_sequence, calculate_properties, get_
 
 app = FastAPI(title="SmartChem API", version="9.0")
 
-# --- CONFIG ---
+# Config
 MODE = "selfies"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 VAE_CHECKPOINT = "checkpoints/vae_selfies_best.pth"
@@ -47,17 +47,13 @@ class OptimizeRequest(BaseModel):
 
 @app.on_event("startup")
 def load_resources():
-    # Use Shared Executor to load resources (idempotent)
     import backend.ml_executor as ml_exec
     ml_exec.load_resources()
-
-# --- STRICT FILTER IS NOW IN ml_executor (Imported internally) ---
 
 @app.post("/optimize/lead")
 def optimize_lead(req: OptimizeRequest):
     """
-    Synchronous Endpoint (Legacy)
-    Delegates to shared executor.
+    Synchronous Endpoint
     """
     try:
         import backend.ml_executor as ml_exec
@@ -67,7 +63,7 @@ def optimize_lead(req: OptimizeRequest):
     except Exception as e:
         raise HTTPException(500, str(e))
 
-# --- GENERATOR ---
+# Generators
 @app.post("/generate")
 def generate_random(req: GenerateRequest):
     try:
@@ -92,7 +88,7 @@ def generate_targeted(req: GenerateRequest):
         raise HTTPException(500, str(e))
 
 
-# --- Routers ---
+# Routers
 from backend.routers import auth, projects, molecules
 
 app.include_router(auth.router)

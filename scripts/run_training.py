@@ -1,28 +1,8 @@
 """
 scripts/run_training.py
-=======================
-Unified, lightweight training entry-point for SmartChem.
 
-Purpose
--------
-Run a short (8-epoch) training pass over the existing preprocessed dataset to
-populate the evaluation logs with REAL metrics.  The production checkpoints in
-checkpoints/ are NOT overwritten — eval-specific weights are saved to
-checkpoints/eval_run/ so this script is safe to run any time.
-
-Usage (from project root)
--------------------------
-    python scripts/run_training.py
-
-What this script does
----------------------
-1.  VAE  — 8 epochs, logs bce / kl / total loss per epoch
-2.  Predictor — 8 epochs, logs mse_qed / mse_logp / mse_sas per epoch
-                         + per-sample true/pred for scatter plots
-3.  Inference validation — generates 10 random molecules + runs one targeted
-    optimisation call to populate optimization_log.csv and validity_stats.json
-
-All outputs land in evaluation/logs/ and evaluation/plots/ (via plot_metrics.py).
+Evaluation training pipeline entry point over preprocessed dataset.
+Outputs are saved to `evaluation/logs` and `evaluation/plots`.
 """
 
 import os
@@ -34,7 +14,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
 
-# ── Make sure the project root is on sys.path ─────────────────────────────────
+# Add project root to path
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
@@ -47,7 +27,7 @@ from evaluation.eval_logger import (
     log_predictor_sample,
 )
 
-# ── CONFIG ────────────────────────────────────────────────────────────────────
+# Configuration
 MODE          = "selfies"
 BATCH_SIZE    = 64
 VAE_EPOCHS    = 8
@@ -65,9 +45,6 @@ PROD_CKPT_DIR = os.path.join(ROOT, "checkpoints")
 os.makedirs(CKPT_DIR, exist_ok=True)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-#  HELPER — VAE loss function (mirrors misc/train.py exactly)
-# ═══════════════════════════════════════════════════════════════════════════════
 def vae_loss(recon_x, x, mu, logvar, kld_weight):
     B, L, V = recon_x.shape
     recon_flat = recon_x.view(B * L, V)
@@ -77,9 +54,6 @@ def vae_loss(recon_x, x, mu, logvar, kld_weight):
     return bce + kld_weight * kld, bce, kld
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-#  STAGE 1 — VAE Training
-# ═══════════════════════════════════════════════════════════════════════════════
 def train_vae(vocab_size, loader):
     print(f"\n{'='*60}")
     print(f"  STAGE 1 — VAE Training  ({VAE_EPOCHS} epochs, {DEVICE})")
@@ -87,7 +61,7 @@ def train_vae(vocab_size, loader):
 
     model = VAE(vocab_size=vocab_size, latent_dim=LATENT_DIM).to(DEVICE)
 
-    # Warm-start from the existing best checkpoint if available (much faster convergence)
+    # Initialize checkpoint if available
     prod_ckpt = os.path.join(PROD_CKPT_DIR, f"vae_{MODE}_best.pth")
     if os.path.exists(prod_ckpt):
         model.load_state_dict(torch.load(prod_ckpt, map_location=DEVICE))
@@ -104,7 +78,7 @@ def train_vae(vocab_size, loader):
     best_loss = float("inf")
 
     for epoch in range(1, VAE_EPOCHS + 1):
-        # KL annealing: ramp from 0 → 1 across the first 4 epochs
+        # KL annealing
         kld_weight = min(1.0, epoch / 4.0)
 
         running_bce   = 0.0
@@ -132,7 +106,7 @@ def train_vae(vocab_size, loader):
             n_samples     += bs
             pbar.set_postfix({"loss": f"{loss.item()/bs:.4f}"})
 
-        # ── Per-epoch averages (per-token, same unit as the literature) ───────
+        # Calculate epoch averages
         avg_bce   = running_bce   / n_samples
         avg_kld   = running_kld   / n_samples
         avg_total = running_total / n_samples
@@ -140,7 +114,7 @@ def train_vae(vocab_size, loader):
         scheduler.step(avg_total)
         lr_now = optimizer.param_groups[0]["lr"]
 
-        # ── Sanity check ───────────────────────────────────────────────────────
+        # Validation check
         assert not (torch.isnan(torch.tensor(avg_total)) or avg_total > 1e8), \
             f"Loss exploded at epoch {epoch}: {avg_total}"
 
@@ -148,7 +122,7 @@ def train_vae(vocab_size, loader):
               f"BCE={avg_bce:.4f}  KL={avg_kld:.4f}  "
               f"Total={avg_total:.4f}  LR={lr_now:.2e}")
 
-        # ── Evaluation logging ─────────────────────────────────────────────────
+        # Log evaluation metrics
         log_vae_epoch(
             epoch=epoch,
             bce_loss=avg_bce,
@@ -156,7 +130,7 @@ def train_vae(vocab_size, loader):
             total_loss=avg_total,
         )
 
-        # ── Save eval-run checkpoint ───────────────────────────────────────────
+        # Save checkpoint
         if avg_total < best_loss:
             best_loss = avg_total
             torch.save(
@@ -173,9 +147,6 @@ def train_vae(vocab_size, loader):
     return model
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-#  STAGE 2 — Predictor Training
-# ═══════════════════════════════════════════════════════════════════════════════
 def build_predictor_dataset(vae, loader):
     """
     Run the VAE encoder over all training molecules to get μ vectors,
@@ -189,7 +160,7 @@ def build_predictor_dataset(vae, loader):
     with open(os.path.join(PROCESSED_DIR, f"{MODE}_vocab.json")) as fh:
         vocab = json.load(fh)
 
-    # Build index → token map (same +3 offset as the production code)
+    # Build token mapping
     idx_to_token = {v + 3: k for k, v in vocab.items()}
     idx_to_token[0] = ""
     idx_to_token[1] = ""
@@ -222,7 +193,7 @@ def build_predictor_dataset(vae, loader):
                 try:
                     q = rdQED.qed(mol)
                     l = Descriptors.MolLogP(mol)
-                    # SAS proxy: rings + rotatable bonds (matches misc/train_predictor.py)
+                    # Calculate metrics
                     s = (rdMolDescriptors.CalcNumRings(mol) +
                          rdMolDescriptors.CalcNumRotatableBonds(mol))
                     X_list.append(mu[i].cpu())
@@ -268,12 +239,12 @@ def train_predictor(vae, loader):
             optimizer.zero_grad()
             preds = predictor(x_batch)
 
-            # Per-head MSE
+            # Compute loss
             mse_qed  = F.mse_loss(preds[:, 0], y_batch[:, 0])
             mse_logp = F.mse_loss(preds[:, 1], y_batch[:, 1])
             mse_sas  = F.mse_loss(preds[:, 2], y_batch[:, 2])
 
-            # Weighted combined loss (mirrors production optimiser weights)
+            # Compute weighted loss
             sq_diff      = (preds - y_batch) ** 2
             weighted_loss = (sq_diff * weights).mean()
 
@@ -294,7 +265,7 @@ def train_predictor(vae, loader):
               f"MSE_LogP={avg_mse_logp:.5f}  "
               f"MSE_SAS={avg_mse_sas:.5f}")
 
-        # ── Evaluation logging ─────────────────────────────────────────────────
+        # Log evaluation metrics
         log_predictor_epoch(
             epoch=epoch,
             mse_qed=avg_mse_qed,
@@ -302,7 +273,7 @@ def train_predictor(vae, loader):
             mse_sas=avg_mse_sas,
         )
 
-    # ── Log per-sample true/pred for scatter plots ─────────────────────────────
+    # Log samples
     print("  Logging per-sample true/pred values for scatter plot...")
     predictor.eval()
     with torch.no_grad():
@@ -324,9 +295,6 @@ def train_predictor(vae, loader):
     return predictor
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-#  STAGE 3 — Inference Validation (populates optimization & validity logs)
-# ═══════════════════════════════════════════════════════════════════════════════
 def run_inference_validation():
     """
     Boot ml_executor (which loads the PRODUCTION checkpoints) and trigger one
@@ -345,7 +313,7 @@ def run_inference_validation():
         print("       Skipping inference validation.")
         return
 
-    # --- Random generation (populates validity_stats.json) -------------------
+    # Random generation
     print("  Generating 5 random molecules...")
     try:
         results = run_random_generation(5)
@@ -353,7 +321,7 @@ def run_inference_validation():
     except Exception as e:
         print(f"  ⚠️  Random generation failed: {e}")
 
-    # --- Targeted optimisation (populates optimization_log.csv) ---------------
+    # Targeted optimization
     print("  Running targeted optimisation (QED=0.8, LogP=2.0, SAS=2.0)...")
     try:
         results = run_targeted_generation(
@@ -367,9 +335,6 @@ def run_inference_validation():
         print(f"  ⚠️  Targeted optimisation failed: {e}")
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-#  MAIN
-# ═══════════════════════════════════════════════════════════════════════════════
 def main():
     print(f"\n{'#'*60}")
     print("  SmartChem — Evaluation Training Run")
@@ -377,7 +342,7 @@ def main():
     print(f"  VAE epochs : {VAE_EPOCHS}   Predictor epochs : {PRED_EPOCHS}")
     print(f"{'#'*60}")
 
-    # ── Load vocab & data ──────────────────────────────────────────────────────
+    # Load data
     vocab_path = os.path.join(PROCESSED_DIR, f"{MODE}_vocab.json")
     data_path  = os.path.join(PROCESSED_DIR, f"train_{MODE}.pt")
 
@@ -394,20 +359,19 @@ def main():
     print(f"  Vocab    : {vocab_size} tokens")
     print(f"  Batches  : {len(loader)} per epoch  (batch_size={BATCH_SIZE})")
 
-    # ── Stage 1: VAE ──────────────────────────────────────────────────────────
+    # Stage 1: VAE
     vae = train_vae(vocab_size, loader)
 
-    # ── Stage 2: Predictor ────────────────────────────────────────────────────
-    # Rebuild a fresh loader (no drop_last, so all molecules are encoded)
+    # Stage 2: Predictor
     full_loader = DataLoader(
         TensorDataset(data), batch_size=BATCH_SIZE, shuffle=False, num_workers=0
     )
     train_predictor(vae, full_loader)
 
-    # ── Stage 3: Inference ────────────────────────────────────────────────────
+    # Stage 3: Inference
     run_inference_validation()
 
-    # ── Stage 4: Regenerate plots ─────────────────────────────────────────────
+    # Stage 4: Plots
     print(f"\n{'='*60}")
     print("  STAGE 4 — Regenerating Evaluation Plots")
     print(f"{'='*60}")
