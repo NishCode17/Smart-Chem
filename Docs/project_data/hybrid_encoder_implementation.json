@@ -1,0 +1,35 @@
+{
+  "hybrid_encoder": {
+    "base_encoder_outputs": {
+      "cnn_output_dimension": "128 (mu_seq)",
+      "gnn_output_dimension": "128 (mu_graph)",
+      "notes": "Base encoders are entirely frozen (requires_grad = False). Only the deterministic mean (mu) is passed into the fusion layer to prevent stacked stochasticity."
+    },
+    "projection_layers": {
+      "seq_proj": "Linear(128 -> 64) + ReLU",
+      "graph_proj": "Linear(128 -> 64) + ReLU",
+      "rationale": "Independent mappings scale the incoming latent dimensions into a compact 64-dimensional form for each modality independently, allowing the network to explicitly balance the absolute magnitudes before gating."
+    },
+    "gating_mechanism": {
+      "equation": [
+        "gate = sigmoid( W_gate[h_seq || h_graph] + b_gate )",
+        "g_seq, g_graph = chunk(gate, 2)",
+        "h_seq_gated = g_seq * h_seq",
+        "h_graph_gated = g_graph * h_graph"
+      ],
+      "implementation": "gate = torch.sigmoid(self.gate_layer(torch.cat([h_seq, h_graph], dim=1)))\n\ng_seq, g_graph = gate.chunk(2, dim=1)\n\nh_seq = g_seq * h_seq\nh_graph = g_graph * h_graph\n\nself._h_seq_raw = h_seq.clone()\nself._h_graph_raw = h_graph.clone()\n\nh_seq = F.normalize(h_seq, dim=-1)\nh_graph = F.normalize(h_graph, dim=-1)",
+      "rationale": "Rather than hard-assigning representation space strictly through a standard dense connection, the network learns an explicit sigmoid filter map to control the flow factor from both graph topological space and character-string space autonomously."
+    },
+    "balance_loss": {
+      "definition": "A specific magnitude regularizer calculating the mean squared error (MSE) between the raw structural scales (L2-norm vectors) belonging to the incoming gated modalities just prior to normalization. It penalizes one branch overriding the other in magnitude significance.",
+      "mathematical_formula": "loss_balance = weight * MSE(||h_seq_raw||_2, ||h_graph_raw||_2)",
+      "weight": 0.01,
+      "implementation_notes": "Implemented directly in the `_forward_batch` of `train_vae.py`. Computing the loss AFTER F.normalize(dim=-1) breaks training since unit vectors always bear exactly a 1.0 norm and zero gradients yield off it."
+    },
+    "kl_warmup_schedule_differences": {
+      "standalone_architectures": "CNN/GNN both utilize a sharp 25-epoch cycle tracking strictly up to an ultimate beta target of 1.0 (min(1.0, epoch / 25)).",
+      "hybrid_architecture": "Utilizes a fundamentally protracted 40-epoch warmup window (min(1.0, epoch / 40)). For a 20 Epoch cap, Beta ceases functionally at exactly 0.50.",
+      "rationale": "Since the underlying network abstractions (the CNN/GNN bases themselves) are strictly frozen, abrupt KL pressure spikes rapidly collapse the delicate gating mechanism into exploiting whichever modality possesses universally broader feature scope. Expanding the warmup period shields the fusion block, letting structural combinations lock together reliably."
+    }
+  }
+}

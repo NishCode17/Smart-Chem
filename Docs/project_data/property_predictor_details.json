@@ -1,0 +1,29 @@
+{
+  "architecture": {
+    "type": "Multi-Layer Perceptron (MLP)",
+    "input_dimension": "128 (latent vector z from VAE encoder)",
+    "hidden_layers": [
+      "Linear(128 -> 64) -> ReLU",
+      "Linear(64 -> 32) -> ReLU"
+    ],
+    "output_layer": "Linear(32 -> 3) mapping to [QED, LogP, SAS]"
+  },
+  "training_procedure": {
+    "optimizer": "Adam, learning_rate=1e-3",
+    "loss_function": "Mean Squared Error (MSELoss)",
+    "epochs": 12,
+    "batch_size": 256,
+    "target_derivation": "RDKit ground truth properties (Descriptors.qed, Descriptors.MolLogP, sascorer.calculateScore)"
+  },
+  "dataset_split": {
+    "training_set_ratio": 0.8,
+    "test_set_ratio": 0.2,
+    "train_split_absolute_count": 40000,
+    "test_split_absolute_count": 10000,
+    "splitting_rules": "Strict disjoint partitioning. The testing split is unconditionally held out entirely from predictor training and VAE parameterization."
+  },
+  "performance_metrics": {
+    "evaluated_on": "Held-Out Testing Data",
+    "status": "Awaiting full pass evaluation over 10,000 testing set embeddings"
+  }
+}

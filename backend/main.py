@@ -17,6 +17,7 @@ from models.vae import VAE
 from models.predictor import PropertyPredictor
 from backend.optimizer import optimize_latent_vector
 from backend.chem_utils import get_mol_from_sequence, calculate_properties, get_3d_mol_block
+from backend.admet import compute_admet
 
 app = FastAPI(title="SmartChem API", version="9.0")
 
@@ -140,5 +141,23 @@ def analyze_molecule(req: StructureRequest):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ [Analyze] Unexpected error: {e}")
+        print(f"[Analyze] Unexpected error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/utils/admet")
+def predict_admet(req: StructureRequest):
+    """
+    Comprehensive ADMET profile for any SMILES.
+    Returns 20+ endpoints across Absorption, Distribution,
+    Metabolism, Excretion, Toxicity plus a composite drug_score.
+    """
+    if not req.smiles or not req.smiles.strip():
+        raise HTTPException(status_code=400, detail="SMILES string is required")
+    mol = Chem.MolFromSmiles(req.smiles.strip())
+    if mol is None:
+        raise HTTPException(status_code=400, detail="Invalid SMILES string")
+    result = compute_admet(mol)
+    if not result:
+        raise HTTPException(status_code=500, detail="ADMET computation failed")
+    return result

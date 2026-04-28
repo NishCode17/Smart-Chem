@@ -1,0 +1,29 @@
+{
+  "dataset_parameters": {
+    "source_database": {
+      "exact_subset": "ZINC-250k (The 250,000 commercial molecule dataset universally utilized for generative validation).",
+      "sampled_volume": "Extracted specifically to a target operational size of 50,000 valid molecular configurations to optimize parameterizations during active learning cycles in the local training pipeline.",
+      "raw_input_format": "SMILES (Simplified Molecular-Input Line-Entry System)"
+    },
+    "preprocessing_pipeline": {
+      "translation": "Robust programmatic translation from raw SMILES strings directly into SELFIES (Self-Referencing Embedded Strings) guarantees absolute string-level syntactical validity internally across the generative network structure.",
+      "sequence_constraints": {
+        "maximum_molecule_atoms": 60,
+        "maximum_padded_sequence_length": 100
+      },
+      "graph_constraints": {
+        "node_dimension": 17,
+        "edge_dimension": 6
+      }
+    },
+    "vocabulary": {
+      "token_vocabulary_size": 93,
+      "structure": "A custom extraction array directly derived from the fully tokenized dataset. Accounts strictly for specific molecular junctions, aromatic rings, and padding (index=0)."
+    },
+    "split_mechanics": {
+      "training_set": "80% (Precisely 40,000 Samples)",
+      "validation_test_set": "20% (Precisely 10,000 Samples)",
+      "split_integrity": "The data is uniformly shuffled initially, and partitioned deterministically. The 10k sub-pool is forcibly isolated to avoid empirical metric leakage when applying downstream latent mappings or prediction metrics against the frozen network checkpoints."
+    }
+  }
+}

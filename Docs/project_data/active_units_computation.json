@@ -1,0 +1,7 @@
+{
+  "metric_name": "Active Units (AU)",
+  "mathematical_definition": "A latent dimension 'j' is considered active if the empirical variance of its encoded means (mu) across a batch exceeds a specified threshold (tau). Formally, AU = sum_{j=1}^{d} I(Var(mu_{:, j}) > tau), where d is the latent space dimension, and I is the indicator function.",
+  "threshold_used": 0.01,
+  "code_implementation_snippet": "with torch.no_grad():\n    # Variance-based active unit tracking\n    au = int((mu.var(dim=0) > 1e-2).sum().item())",
+  "evaluation_context": "Computed dynamically on the training set (per-batch) within the main training loop in `training/train_vae.py` to monitor latent space collapse in real-time."
+}

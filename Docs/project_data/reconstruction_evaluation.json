@@ -1,0 +1,39 @@
+{
+  "num_samples_evaluated": 1024,
+  "definitions": {
+    "reconstruction_accuracy": "Evaluated using Teacher Forcing (computing likelihood of tokens given exact previous ground-truth tokens and the latent vector `z`). Uses purely the mean vector (mu) to disable noise during inference.",
+    "token_level_accuracy": "Percentage of valid, non-padded tokens correctly mapped by argmax(logits) across the entire batch.",
+    "sequence_level_accuracy": "Percentage of full molecular sequences mapped perfectly with 0 token errors."
+  },
+  "metrics": {
+    "token_level_accuracy": 77.38,
+    "sequence_level_accuracy": 0.0
+  },
+  "examples": [
+    {
+      "input": "[O][=C][Branch1][C][O-1][C][Branch1][=N][C][C][=C][C][=C][C][Branch1][C][Cl][=C][Ring1][#Branch1][C][C][C][C][Ring1][=N]<eos>",
+      "reconstruction_argmax": "[O][=C][Branch1][C][O-1][C][C][C][C][=C][=C][C][=C][Branch1][Branch1][C][F][=C][Ring1][#Branch1][C][C][C][Ring1][Ring1][Ring1]<eos>",
+      "exact_match": false
+    },
+    {
+      "input": "[C][C][=C][C][=C][C][Branch2][Ring1][=Branch2][N][C][=Branch1][C][=O][C][N][C][=N][C][=C][C][=C][Branch1][C][Br][C][=C][Ring1][#Branch1][C][Ring1][O][=O][=C][Ring2][Ring1][=Branch1][C]<eos>",
+      "reconstruction_argmax": "[C][C][=C][C][=C][C][Branch2][Ring1][Branch2][N][C][=Branch1][C][=O][C][N][C][=C][C][=C][C][=C][C][C][C][C][=C][Ring1][#Branch1][C][=C][#Branch2][=C][=C][Ring2][Ring1][Branch1]<eos><eos>",
+      "exact_match": false
+    },
+    {
+      "input": "[C][O][C][=C][C][=C][Branch2][Ring1][Ring1][C@][Branch1][C][C][Branch1][C][O][C][C][=N][C][Branch1][C][C][=C][S][Ring1][=Branch1][C][=C][Ring1][S]<eos>",
+      "reconstruction_argmax": "[C][O][C][=C][C][=C][Branch2][Ring1][Ring2][C][Branch1][C][O][Branch1][C][O][C][C][=C][C][=C][C][C][=C][S][Ring1][=Branch1][C][=C][Ring2][P]<eos>",
+      "exact_match": false
+    },
+    {
+      "input": "[O][=C][Branch1][=Branch2][N][C][=C][C][=C][S][Ring1][Branch1][N][C@@H1][C][C][=Branch1][C][=O][N][Branch1][N][C][C][C][C][=C][C][=C][C][=C][Ring1][=Branch1][C][Ring1][#C]<eos>",
+      "reconstruction_argmax": "[O][=C][Branch1][#Branch2][C][C][C][C][=C][O][Ring1][Branch1][N][C][C][C][C][C][=O][N][Branch1][#Branch2][C][=C][=C][=C][=C][C][=C][C][=C][Ring1][=Branch1][C][Ring1][=N]<eos>",
+      "exact_match": false
+    },
+    {
+      "input": "[C][NH1+1][Branch1][C][C][C@@H1][C][C][C@@H1][Branch2][Ring1][N][N][C][=Branch1][C][=O][C][C][C][=N][C][Branch1][N][C][=C][C][=C][Branch1][C][Cl][C][=C][Ring1][#Branch1][=N][O][Ring1][N][C][Ring2][Ring1][=Branch1]<eos>",
+      "reconstruction_argmax": "[C][NH1+1][Branch1][C][C][C][C][C][C][Branch2][Ring1][N][C][C][=Branch1][C][=O][C][=C][=C][N][N][Branch1][=Branch2][C][=C][C][=C][Branch1][C][F][C][=C][Ring1][#Branch1][=N][O][Ring1][N][C][Ring2][Ring1][Branch1]<eos>",
+      "exact_match": false
+    }
+  ]
+}

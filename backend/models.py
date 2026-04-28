@@ -107,8 +107,8 @@ class MoleculeCreate(BaseModel):
     tags: List[str] = []
     properties: MolProperties
     admet: Optional[AdmetProperties] = None
+    admet_full: Optional[Dict[str, Any]] = {}  # full 20+ endpoint profile
     tox_alerts: Optional[Dict[str, Any]] = {}
-
 
 class MoleculeDB(MongoBaseModel):
     user_id: str
@@ -119,6 +119,7 @@ class MoleculeDB(MongoBaseModel):
     tags: List[str]
     properties: MolProperties
     admet: Optional[AdmetProperties] = None
+    admet_full: Optional[Dict[str, Any]] = {}  # full 20+ endpoint profile
     tox_alerts: Optional[Dict[str, Any]] = {}
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -132,6 +133,7 @@ class MoleculeResponse(BaseModel):
     tags: List[str]
     properties: MolProperties
     admet: Optional[AdmetProperties]
+    admet_full: Optional[Dict[str, Any]] = {}  # full 20+ endpoint profile
     tox_alerts: Optional[Dict[str, Any]]
     created_at: datetime
 

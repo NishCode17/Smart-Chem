@@ -1,0 +1,24 @@
+{
+  "reproducibility_metrics": {
+    "hardware_allocation": {
+      "execution_environment": "GPU (CUDA Device Supported)",
+      "cuda_toolkit_version_target": "11.8"
+    },
+    "framework_versions": {
+      "PyTorch": "2.7.1+cu118",
+      "PyTorch_Geometric": "2.6.1"
+    },
+    "training_time_estimates": {
+      "cnn_vae_model": "Approximately 4.5 - 5.5 minutes (25 epochs over 40,000 samples @ batch size 64)",
+      "gnn_vae_model": "Approximately 5 - 6 minutes (25 epochs over 40,000 graph samples @ batch size 64)",
+      "hybrid_vae_model": "Approximately 4 - 5 minutes (20 epochs over 40,000 merged samples @ batch size 64). Faster per-epoch iteration since the base structural encoder layers evaluated in forward-mode are strictly frozen.",
+      "property_predictor_mlp": "Under 1 minute (12 epochs mapping fixed 128D latent spaces)."
+    },
+    "non_deterministic_components_and_limitations": {
+      "random_seed_initialization": "No explicit global `torch.manual_seed()` overrides were enforced over Python, NumPy, or PyTorch RNG environments. Model initialization weights will vary strictly across runs.",
+      "stochastic_latent_sampling": "The operational `reparameterize(mu, logvar)` function inside the VAE block intrinsically relies on random Gaussian noise iterations (`torch.randn_like()`).",
+      "dataloader_stochasticity": "The dataset is repeatedly presented with `shuffle=True` using standard operational multithreading random sampling, causing varied minibatch distributions globally across runs.",
+      "cudnn_benchmarking": "`torch.backends.cudnn.deterministic` has not been strictly locked to True. Execution sequences via CuDNN on local GPUs may employ internal heuristic auto-tuning favoring speed over strict mathematical equivalence across repetitions."
+    }
+  }
+}

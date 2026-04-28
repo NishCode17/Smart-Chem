@@ -1,14 +1,64 @@
+# =============================================================================
+# SmartChem — Python Dependencies
+# =============================================================================
+# Install order matters for PyG. Follow the instructions below.
+#
+# STEP 1 — PyTorch (already installed in smartchem conda env):
+#   conda install pytorch==2.7.1 torchvision torchaudio pytorch-cuda=11.8 \
+#         -c pytorch -c nvidia
+#
+# STEP 2 — PyTorch Geometric (must match torch + CUDA version):
+#   pip install torch_geometric
+#   pip install torch_scatter torch_sparse torch_cluster torch_spline_conv \
+#         -f https://data.pyg.org/whl/torch-2.7.1+cu118.html
+#
+# STEP 3 — Everything else:
+#   pip install -r requirements.txt
+# =============================================================================
+
+# ── Deep Learning ─────────────────────────────────────────────────────────────
+# torch and torchvision are installed via conda (see STEP 1 above).
+# Listed here for reference only — do NOT pip-install if already in conda env.
+# torch==2.7.1
+# torchvision
+
+# PyTorch Geometric (see STEP 2 above)
+torch_geometric
+
+# ── Cheminformatics ───────────────────────────────────────────────────────────
+rdkit                    # Molecular handling, QED, LogP, ADMET, 3D embedding
+selfies                  # SELFIES tokenisation / decoding
+
+# ── Scientific Computing ──────────────────────────────────────────────────────
+numpy
+scikit-learn             # PCA (used in bayesian_optimization.py)
+scikit-optimize          # gp_minimize / Bayesian optimisation (skopt)
+pandas                   # CSV / DataFrame handling in evaluation scripts
+matplotlib               # Plotting (evaluation/plotting.py, analysis/)
+
+# ── Web Backend (FastAPI) ─────────────────────────────────────────────────────
 fastapi
-uvicorn
-motor
-pymongo
-python-dotenv
-bcrypt
-passlib
-python-jose
-python-multipart
-email-validator
-dnspython
-requests
-selfies
-argon2-cffi
+uvicorn[standard]        # ASGI server
+pydantic[email]          # Data models + EmailStr validation
+python-multipart         # Form / file upload support
+
+# ── Database ──────────────────────────────────────────────────────────────────
+motor                    # Async MongoDB driver
+pymongo                  # Sync MongoDB driver (bson ObjectId etc.)
+dnspython                # MongoDB Atlas SRV DNS resolution
+
+# ── Authentication ────────────────────────────────────────────────────────────
+python-jose[cryptography]   # JWT encoding / decoding (jose.jwt)
+passlib[argon2]             # Password hashing (argon2 scheme)
+argon2-cffi                 # Argon2 backend for passlib
+bcrypt                      # Fallback hashing support
+
+# ── Networking / HTTP ─────────────────────────────────────────────────────────
+requests                 # Groq API calls (backend/assistant.py)
+python-dotenv            # .env file loading
+
+# ── SAS Scorer ────────────────────────────────────────────────────────────────
+# sascorer is NOT on PyPI. Download the standalone script from:
+#   https://github.com/rdkit/rdkit/blob/master/Contrib/SA_Score/sascorer.py
+# Place it at the project root:   Smart Chem/sascorer.py
+# It is imported in training/train_vae.py via importlib if not on sys.path.

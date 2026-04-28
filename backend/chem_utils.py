@@ -1,6 +1,7 @@
 from rdkit import Chem
 from rdkit.Chem import Descriptors, QED, Draw, rdMolDescriptors, AllChem
 from rdkit.Chem import FilterCatalog
+from backend.admet import compute_admet
 import selfies as sf
 import base64
 from io import BytesIO
@@ -95,38 +96,12 @@ def calculate_admet(mol):
 
 def estimate_admet_scores(mol):
     """
-    Estimates 0-1 scores for ADMET properties.
+    Returns the five 0-1 ADMET summary scores used by the frontend radar chart.
+    Delegates to compute_admet() — backward-compatible return shape.
     """
-    if mol is None: return {}
-
-    logp = Descriptors.MolLogP(mol)
-    tpsa = Descriptors.TPSA(mol)
-    mw = Descriptors.MolWt(mol)
-    
-    # 1. Absorption (Human Intestinal Absorption)
-    # TPSA < 140 is generally good. Sigmoid decay.
-    absorption = 1.0 / (1.0 + math.exp((tpsa - 140) / 15))
-    
-    # 2. Distribution
-    bbb_score = math.exp(-0.5 * ((logp - 3.0) / 1.5)**2)
-    if tpsa > 90: bbb_score *= 0.5
-    
-    # 3. Metabolism
-    metabolism = 1.0 / (1.0 + math.exp((logp - 4.0) / 1.0))
-    
-    # 4. Excretion
-    excretion = 1.0 / (1.0 + math.exp((mw - 400) / 100))
-    
-    # 5. Toxicity
-    toxicity_score = 1.0 / (1.0 + math.exp(-(logp - 5.0)))
-    
-    return {
-        "absorption": round(absorption, 2),
-        "distribution": round(bbb_score, 2),
-        "metabolism": round(metabolism, 2),
-        "excretion": round(excretion, 2),
-        "toxicity": round(toxicity_score, 2)
-    }
+    if mol is None:
+        return {}
+    return compute_admet(mol).get("summary", {})
 
 def check_toxicity_alerts(mol):
     """
@@ -247,17 +222,20 @@ def calculate_properties(mol):
         img.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode()
         
+        admet_full = compute_admet(mol)
+
         return {
             "valid": True,
             "smiles": Chem.MolToSmiles(mol),
             "qed": qed,
             "logp": logp,
-            "score": score,                  # New Scoring Field
-            "longest_chain": longest_chain,  # Debug info
-            "aromatic_rings": aromatic_rings,# Debug info
-            "admet": estimate_admet_scores(mol),         # Scored (0-1) for Charts
-            "admet_props": calculate_admet(mol),         # Raw Properties (MW, TPSA)
-            "tox_alerts": check_toxicity_alerts(mol),    # Structural Alerts
+            "score": score,
+            "longest_chain": longest_chain,
+            "aromatic_rings": aromatic_rings,
+            "admet":      admet_full.get("summary", {}),  # 5-score summary (existing frontend key)
+            "admet_full": admet_full,                      # Full 20+ endpoint profile (new)
+            "admet_props": calculate_admet(mol),           # Raw RDKit props (MW, TPSA, etc.)
+            "tox_alerts": check_toxicity_alerts(mol),
             "status": status,
             "image": f"data:image/png;base64,{img_str}"
         }

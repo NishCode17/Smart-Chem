@@ -1,0 +1,98 @@
+{
+  "project_configs": {
+    "common_parameters": {
+      "latent_dimension": 128,
+      "batch_size": 64,
+      "word_dropout_rate": 0.3,
+      "reconstruction_loss_scaling_factor": 0.01,
+      "kl_target_floor": 0.1,
+      "latent_injection_method": "Latent vector `z` (128-dim) is expanded and concatenated with the input sequence embeddings (128-dim) at EVERY timestep during decoding to form a 256-dim GRU input, forcing autoregressive dependence on the prior.",
+      "decoder_architecture": {
+        "embedding_layer": "Vocab Size (93) -> 128 dim (padding_idx=0)",
+        "hidden_initialization": "Linear(128, 256) -> Tanh",
+        "gru_module": "GRU(input_size=256, hidden_size=256, batch_first=True)",
+        "output_projection": "Linear(256, vocab_size)"
+      },
+      "random_seeds_used": "Not explicitly set in the training scripts (default system entropy)."
+    },
+    "cnn_model": {
+      "training_parameters": {
+        "num_epochs": 25,
+        "optimizer": {
+          "type": "Adam",
+          "learning_rate": 0.001,
+          "betas": [0.9, 0.999]
+        },
+        "kl_annealing_schedule": "Linear warmup over 25 epochs: `beta = min(1.0, epoch / 25)`"
+      },
+      "encoder_architecture": {
+        "input_embedding": "nn.Embedding(93, 128)",
+        "conv_blocks": [
+          "Dilated Conv1d(128 -> 256, kernel=3, dilation=1) -> LayerNorm -> GELU + Residual",
+          "Dilated Conv1d(256 -> 256, kernel=3, dilation=2) -> LayerNorm -> GELU + Residual",
+          "Dilated Conv1d(256 -> 256, kernel=3, dilation=4) -> LayerNorm -> GELU + Residual",
+          "Dilated Conv1d(256 -> 256, kernel=3, dilation=8) -> LayerNorm -> GELU + Residual"
+        ],
+        "pooling_strategy": "Dual pooling (AdaptiveMaxPool1d + AdaptiveAvgPool1d), concatenated to 512 dimensions",
+        "mlp_projection": "Linear(512, 256) -> LayerNorm -> GELU",
+        "latent_heads": {
+          "mu_layer": "Linear(256, 128)",
+          "logvar_layer": "Linear(256, 128) [Outputs clamped between -6.0 and 2.0]"
+        }
+      }
+    },
+    "gnn_model": {
+      "training_parameters": {
+        "num_epochs": 25,
+        "optimizer": {
+          "type": "Adam",
+          "learning_rate": 0.0005,
+          "betas": [0.9, 0.999]
+        },
+        "kl_annealing_schedule": "Linear warmup over 25 epochs: `beta = min(1.0, epoch / 25)`"
+      },
+      "encoder_architecture": {
+        "node_projection": "Linear(17, 128)",
+        "message_passing_layers": [
+          "GINEConv(MLP: Linear(128, 128) -> ReLU -> Linear(128, 128)) -> BatchNorm1d -> ReLU + Residual",
+          "GINEConv(MLP: Linear(128, 128) -> ReLU -> Linear(128, 128)) -> BatchNorm1d -> ReLU + Residual"
+        ],
+        "pooling_strategy": "Dual graph pooling (global_max_pool + global_mean_pool), concatenated to 256 dimensions -> F.normalize(dim=-1)",
+        "latent_heads_applied_individually": {
+          "mu_network": "Sequential(Linear(256, 128), ReLU, Linear(128, 128))",
+          "logvar_network": "Sequential(Linear(256, 128), ReLU, Linear(128, 128))"
+        }
+      }
+    },
+    "hybrid_model": {
+      "training_parameters": {
+        "num_epochs": 20,
+        "optimizer": {
+          "type": "Adam",
+          "learning_rate": 0.001,
+          "betas": [0.9, 0.999],
+          "parameter_scope": "Only updates fusion network, balance gates, and decoder. Base encoders frozen."
+        },
+        "kl_annealing_schedule": "Extended linear warmup over 40 epochs: `beta = min(1.0, epoch / 40)`. Beta reaches 0.5 at epoch 20.",
+        "balance_loss_regularization": "Magnitude equalizer tracking pre-normalization modalities with weight 0.01: `loss = loss + 0.01 * MSE(norm(h_seq), norm(h_graph))`"
+      },
+      "encoder_architecture": {
+        "base_encoders": "Pretrained CNN and GNN (requires_grad=False)",
+        "independent_projections": {
+          "seq_proj": "Linear(128, 64) -> ReLU",
+          "graph_proj": "Linear(128, 64) -> ReLU"
+        },
+        "gated_fusion_mechanism": {
+          "gate_layer": "Linear(128, 128) -> Sigmoid -> Chunked to g_seq(64), g_graph(64)",
+          "applied_gating": "h_seq * g_seq, h_graph * g_graph",
+          "normalization": "Both gated vectors individually L2-normalized via F.normalize(dim=-1)"
+        },
+        "fusion_mlp": "Concatenated normalized vectors (128) -> Sequential(Linear(128, 128), ReLU, Linear(128, 128))",
+        "latent_heads": {
+          "mu_layer": "Linear(128, 128)",
+          "logvar_layer": "Linear(128, 128)"
+        }
+      }
+    }
+  }
+}

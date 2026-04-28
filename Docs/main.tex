@@ -1,0 +1,1446 @@
+\documentclass[12pt,a4paper]{report}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{cite}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{titlesec}
+
+\geometry{left=1.5in,right=1in,top=1in,bottom=1in}
+
+\onehalfspacing
+
+% Chapter formatting
+\titleformat{\chapter}[display]
+{\bfseries\Huge\centering}
+{\chaptername\ \thechapter}{20pt}{\huge}
+
+\begin{document}
+
+%--------------------------------
+% TITLE PAGE
+%--------------------------------
+\begin{titlepage}
+\centering
+
+{\Large \textbf{SmartChem: AI for Molecular Drug Design}}\\[0.75cm]
+
+A Major Project Report Submitted in Partial Fulfillment for the Award of the Degree of Bachelor of Technology in Computer Science and Engineering\\[0.5cm]
+
+{\textbf{Submitted \\To}}\\
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.25\textwidth]{logo.png}
+\end{figure}
+{\textbf{Dr. A.P.J. ABDUL KALAM TECHNICAL UNIVERSITY, LUCKNOW}\\[0.5cm]
+\textbf{Submitted By:}\\[0.2cm]
+
+{\textbf{NISHANT SINGH BISHT (2200100100228)}}\\[0.15cm]
+{\textbf{NAVYA SINGH (2200100100219)}}\\[0.15cm]
+{\textbf{NISHANT KUMAR SINGH (2200100100225)}}\\[0.15cm]
+{\textbf{SHIVAM SAHANI (2200100100313)}}\\
+[1cm]
+
+Under the Supervision of\\[0.2cm]
+{\Large \textbf{Mr. Sachin Sonker}}\\
+{\textbf{Assistant Professor}}\\
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.25\textwidth]{united.jpg}
+\end{figure}
+
+{\textbf{DEPARTMENT OF COMPUTER SCIENCE AND ENGINEERING\\UNITED COLLEGE OF ENGINEERING \& RESEARCH, PRAYAGRAJ, INDIA}}\\
+{\textbf{MAY 2026}}
+
+
+\end{titlepage}
+\clearpage
+\pagenumbering{roman}
+\setcounter{page}{1}
+%--------------------------------
+% CERTIFICATE
+%--------------------------------
+\chapter*{Certificate}
+This is to certify that the project titled \textbf{"SmartChem: AI for Molecular Drug Design"} is the genuine work carried out by \textbf{Nishant Singh Bisht (2200100100228), Navya Singh (2200100100219), Nishant Kumar Singh (2200100100225), Shivam Sahani (2200100100313)}, in partial fulfillment of the requirements for the award of the \textbf{Bachelor of Technology} (Computer Science and Engineering) degree submitted to \textbf{Dr. A.P.J. Abdul Kalam Technical University, Lucknow}, at \textbf{United College of Engineering \& Research, Prayagraj}.\\The project is an authentic record of their own work carried out during the period from \textbf{June 2025} to \textbf{May 2026} under the guidance of \textbf{Mr. Sachin Sonker (Assistant Professor)}, Department of Computer Science \& Engineering.\\[0.2cm]The Major Project Viva-Voce Exam was held on .................................................\\[1cm]
+Signature of the Supervisor \textbf{[Mr. Sachin Sonker]}\\[0.8cm]
+Signature of the Project Coordinator \textbf{[Mr. Shyam Bahadur Verma]}\\[0.8cm]
+Signature of the Head of Department \textbf{[Dr. Vijay Kumar Dwivedi]}\\[0.8cm]
+Name \& Signature of the \textbf{External Examiner}\\[4cm]\textbf{Place: Prayagraj\\
+Date:\\}
+
+
+%--------------------------------
+% DECLARATION
+%--------------------------------
+\chapter*{Candidate's Declaration}
+
+We declare that the project entitled \textbf{"SmartChem: AI for Molecular Drug Design"}, submitted by us in partial fulfillment of the requirements for the award of the degree \textbf{Bachelor of Technology}, (Computer Science and Engineering) to Dr. A.P.J. Abdul Kalam Technical University, Lucknow, at United College of Engineering \& Research, Prayagraj, is an authentic record of our own work carried out during the period from June 2025 to May 2026 under the guidance of \textbf{Mr. Sachin Sonker, (Assistant Professor)}, Department of Computer Science and Engineering.\\[0.5cm] 
+We further declare that the matter presented in this project has not been submitted for the award of any other degree, diploma, fellowship, or other similar title.\\[1cm]
+Signature of the Student \textbf{(Nishant Singh Bisht, 2200100100228)}\\[0.8cm]Signature of the Student
+\textbf{(Navya Singh, 2200100100219)}\\[0.8cm]Signature of the Student \textbf{(Nishant Kumar Singh, 2200100100225)}\\[0.8cm]Signature of the Student \textbf{(Shivam Sahani, 2200100100313)}\\[4cm]\textbf{Place: Prayagraj\\Date:}
+
+
+%--------------------------------
+% ACKNOWLEDGEMENT
+%--------------------------------
+\chapter*{Acknowledgment}
+We express our sincere gratitude to Dr. A.P.J. Abdul Kalam Technical University, Lucknow, for giving us the opportunity to undertake the Major Project during the final year of our \textbf{B.Tech. (Computer Science and Engineering)} program. This project has been an important and enriching learning experience in our engineering education.\\We extend our heartfelt thanks to \textbf{Dr. Swapnil Srivastava}, Principal, and \textbf{Dr. Vijay Kumar Dwivedi}, Dean Academics \& Head, Department of Computer Science and Engineering, United College of Engineering \& Research, Prayagraj, for their constant encouragement and support.\\We owe our deepest gratitude to \textbf{Mr. Sachin Sonker} for his valuable guidance, insightful suggestions, and constructive feedback throughout the course of this project, which has been instrumental in its successful completion.\\We are also grateful to all those who have directly or indirectly supported us during the project work. Last but not least, we express our appreciation to the authors of the books, research papers, and online resources referred while carrying out the project and preparing this report.
+
+
+%--------------------------------
+% ABSTRACT
+%--------------------------------
+\chapter*{Abstract}
+
+Drug discovery is an extremely complex, time-consuming, and resource-intensive activity of which lead identification is a very vital bottleneck during the initial phase. Traditional high-throughput screening systems can only explore a microscopic portion of the estimated $10^{23}$--$10^{60}$ synthetically accessible, drug-like small molecules. In order to overcome this challenge, this project presents a new AI-based drug discovery platform named \textbf{SmartChem}. This generative artificial intelligence framework enables the exploration of large chemical spaces and the generation of novel, pharmacologically viable compounds.
+\\
+
+SmartChem introduces, in place of the weakly-typed Simplified Molecular-Input Line-Entry System (SMILES) representation, a more mathematically robust grammar — \textbf{Self-Referencing Embedded Strings (SELFIES)} — which ensures 100\% syntactically valid molecular structures, removing post-hoc filtering failures. The architecture consists of a set of \textbf{Variational Autoencoders (VAEs)} trained on a curated subset of 100{,}000 molecules from the ZINC-250k dataset, encoding complex molecular geometries into a smooth, continuous 128-dimensional latent space. Three complementary encoders are employed: a \textbf{1D dilated CNN} for sequential SELFIES token dependencies, a \textbf{Graph Isomorphism Network (GINEConv)} for molecular topology, and a novel \textbf{Hybrid encoder} with a learnable gated modality fusion scheme that dynamically fuses sequence and graph representations.
+\\
+
+To prevent the problem of posterior collapse, SmartChem employs a comprehensive anti-collapse training stack including \textbf{Cyclical KL Divergence Annealing} (four cycles), a free-bits regularisation floor, 50\% selective word dropout, and latent vector concatenation at each GRU decoding step. A \textbf{Multi-Layer Perceptron (MLP) Property Predictor} in the latent space is used to predict major pharmacological properties such as QED, LogP, and SAS. Targeted molecular optimisation is performed by gradient descent in the latent space toward user-defined property objectives, and all candidates are subsequently screened through Lipinski Rule of Five, PAINS, Brenk, and NIH toxicity filters.
+\\
+
+The platform is released as a full-stack production web application built with \textbf{React, TypeScript, Vite}, and \textbf{WebGL-based 3D visualisation (3Dmol.js)}, supported by an asynchronous \textbf{FastAPI} server, \textbf{MongoDB} database, and a context-driven AI assistant, \textbf{Dr.\ SmartChem}, powered by the Llama-3.3-70B architecture. Empirical evaluation of 6{,}750 generation trajectories demonstrated the platform's ability to efficiently generate foundational chemical scaffolds, which serve as crucial precursors for early-stage drug design. Within this chemical subspace, the SELFIES architecture definitively proved its core representational advantage, achieving \textbf{100\% structural validity} and \textbf{100\% novelty} across all generated molecules without requiring post-hoc syntactic filtering. The anti-collapse training was successful: the CNN encoder retained 37 active units (28.9\% utilisation) and the GNN encoder retained 70 active units (54.7\% utilisation). The Hybrid encoder, which integrates both modalities via learned gating, achieved an absolute \textbf{18.2\% toxicity filter-pass rate} (representing an \textbf{82\% relative improvement} over the CNN baseline of 10.0\%) and the highest QED targeted-generation hit rate of \textbf{7.6\%}, demonstrating SmartChem's efficacy as an end-to-end de novo pharmaceutical lead generation pipeline.
+
+
+%--------------------------------
+% TABLE OF CONTENTS
+%--------------------------------
+\tableofcontents
+\listoffigures
+\listoftables
+
+%--------------------------------
+% CHAPTERS
+%--------------------------------
+\clearpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\chapter{Introduction}
+
+\section{Background}
+
+Pharmaceutical drug discovery is a complex and resource-intensive process through which novel chemical entities are developed into approved therapeutics. The timeline for bringing a single therapeutic drug from conceptualization to clinical deployment spans \textbf{12 to 15 years}, with costs estimated between \textbf{1.3 and 2.6 billion USD}. A major factor contributing to this burden is the high attrition rate, as most molecular candidates fail during clinical evaluation. Consequently, enhancing the computational efficiency of early-stage molecular sampling has become a critical objective.
+
+\subsection{The Pharmaceutical Drug Discovery Pipeline}
+
+The standard continuum from a biological hypothesis to a market-ready drug is broadly categorized into the following distinct phases:
+
+\begin{enumerate}
+    \item \textbf{Target Identification and Validation:} Isolating and biologically verifying the pathological mechanisms and macromolecules responsible for a disease state.
+    \item \textbf{Hit Discovery:} Identifying preliminary chemical compounds capable of interacting with the target via High-Throughput Screening (HTS).
+    \item \textbf{Lead Identification:} Filtering hits to uncover a viable lead compound with preliminary efficacy and stability. This bottleneck stage is the \textbf{primary focal target of the SmartChem architecture}.
+    \item \textbf{Lead Optimization:} Refining the molecular scaffold to amplify potency while optimizing ADMET properties.
+    \item \textbf{Preclinical Testing \& Clinical Trials:} Extensive \textit{in vitro}, \textit{in vivo}, and human trials to prove safety and therapeutic benefit.
+\end{enumerate}
+
+\subsection{The Bottleneck of Lead Identification and Chemical Space}
+
+Lead identification is challenging due to the vastness of \textbf{chemical space}—the theoretical ensemble of all possible drug-like small molecules. Estimates place this space at $10^{23}$ to $10^{60}$ distinct compounds, whereas current chemical databases index only hundreds of millions. Traditional methods suffer from two main limitations:
+\begin{itemize}
+    \item \textbf{High-Throughput Screening Blindness:} Physical screening is restricted to known, synthesized compounds, missing vast regions of chemical space.
+    \item \textbf{Manual Molecule Design Limitations:} Refinement is bottlenecked by human intuition and the inherently discrete nature of manual chemical modification.
+\end{itemize}
+
+\subsection{AI, Machine Learning, and Generative Frameworks}
+
+The limitations of traditional workflows have motivated the integration of \textbf{Deep Learning (DL)} for \textit{de novo} computational drug design, precipitating a paradigm shift from discrete search to continuous optimization. Various generative models have been adapted to navigate this space, including \textbf{Variational Autoencoders (VAEs)} (which learn a continuous, interpolatable latent space), \textbf{Generative Adversarial Networks (GANs)}, \textbf{Reinforcement Learning (RL)}, and \textbf{Graph Neural Networks (GNNs)} (which natively understand topological molecular graphs).
+
+\subsection{Molecular Representations and the SmartChem Approach}
+
+The effectiveness of these architectures depends critically on the chosen molecular representation. While \textbf{SMILES} has served as the \textit{de facto} standard, its syntactic fragility causes catastrophic failure rates (35\% to 65\% invalidity) during generative decoding. Other formats, such as molecular fingerprints, suffer from lossy hashing. \\
+
+To overcome this, \textbf{SmartChem} implements a \textbf{tripartite VAE architecture} using \textbf{SELFIES (Self-Referencing Embedded Strings)}—a mathematically robust grammar guaranteeing 100\% syntactically valid structures. It features a 1D CNN for sequential SELFIES structures, a GNN for raw molecular graphs, and a novel \textbf{Hybrid Encoder} with gated modality fusion. Supported by an MLP property predictor and deployed as a full-stack web application with AI-assistant integration, SmartChem provides continuous, AI-driven therapeutic candidate generation.
+
+\section{Problem Statement}
+
+Translating theoretical generative models into viable drug discovery engines remains a profound challenge due to four systemic issues:
+
+\textbf{1. The Intractable Vastness of Chemical Space:} The drug-like chemical space ($10^{23}$ to $10^{60}$ molecules) is astronomically larger than existing databases. Algorithmic search over this domain is non-computable, requiring models to accurately extrapolate well beyond their training distributions without producing random chemical noise.
+
+\textbf{2. Syntactic Brittleness of SMILES:} Generative networks decoding SMILES character-by-character frequently output syntax errors. Producing an unmatched parenthesis or invalid atom valence renders the structure useless, wasting massive computational bandwidth and disrupting optimization trajectories. 
+
+\textbf{3. Posterior Collapse in VAEs:} When operating on sequential data, powerful autoregressive decoders often learn perfect localized token reconstruction while entirely ignoring the encoder's latent signal. This collapse destroys the informative quality of the continuous latent space, making gradient-based property optimization mathematically undefined.
+
+\textbf{4. Fragmented Infrastructural Workflows:} Most molecular generation tools exist as fragmented, unoptimized batch-processing scripts. Medicinal chemists are forced to context-switch across disconnected environments for generation, toxicity filtering, and visualization, hindering practical clinical adoption.
+
+\textbf{Conclusion: SmartChem Motivation.} To produce a scalable \textit{de novo} design mechanism, it is absolutely necessary to replace legacy syntax with guaranteed string systems, impose strict anti-collapse regularizers to restore continuous latent spaces, and package the analytical engine within a seamlessly integrated, hardware-accelerated software environment.
+
+\section{Objectives}
+
+The main goal of this project is to establish an end-to-end AI platform to fast-track the lead identification stage. This is achieved through four key objectives:
+
+\textbf{1. 100\% Structural Validity through SELFIES:} Breaking the bottleneck of invalid outputs by replacing SMILES with the mathematically robust SELFIES grammar, ensuring every generated sequence definitively maps to a valid molecular structure and directing computational resources strictly toward promising drug candidates.
+
+\textbf{2. Training Multi-Modal VAE Encoders and Removing Posterior Collapse:} Constructing a tripartite VAE architecture (CNN, GNN, and a dynamically fused Hybrid encoder) and resolving posterior collapse through an aggressive regularization regimen, including cyclical KL annealing, free-bits regularization, and systematic word dropout to guarantee a rich, actionable latent space.
+
+\textbf{3. Continuous Property Prediction and Latent Optimization:} Coupling the continuous latent space with a Multi-Layer Perceptron (MLP) to predict QED, LogP, and SAS. This enables direct mathematical optimization—via Adam-based gradient ascent and Bayesian global search—to discover new molecular scaffolds satisfying strict pharmacological thresholds.
+
+\textbf{4. Building an Asynchronous Web Platform with Integrated AI Assistance:} Delivering the generative engine as a scalable, full-stack React and FastAPI application featuring real-time 3Dmol.js visualizations, asynchronous MongoDB job queueing, automated RDKit Lipinski/toxicity filtering, and an embedded Groq Llama-3.3 conversational agent for verified, low-hallucination chemical analysis.
+
+\chapter{Literature Review}
+
+\section{Artificial Intelligence in Drug Discovery}
+
+Artificial Intelligence (AI) has emerged as a disruptive technology in pharmaceutical research, addressing the historically high costs and extended timelines of conventional drug discovery. The standard process spans over a decade and costs billions, prompting the use of machine learning to accelerate decision-making. AI has been integrated across nearly all phases: genomics and transcriptomics for target identification, computational screening for hit discovery, and deep learning for lead optimization.\\
+
+Specifically, molecular generation and property prediction are areas where deep learning models—including Variational Autoencoders (VAEs), Generative Adversarial Networks (GANs), and Graph Neural Networks (GNNs)—have proven exceptionally capable. These architectures learn the complex non-linear relationships between molecular structure and biological activity. By predicting ADMET properties early via datasets like Tox21 and ClinTox, AI dramatically limits the chances of failure in later clinical stages, motivating the development of integrated platforms like SmartChem.
+
+\section{Molecular Representation Methods}
+
+The performance of any cheminformatics machine learning model is directly constrained by its chosen molecular representation. \textbf{SMILES} (Simplified Molecular Input Line Entry System) strings have been the historical standard, encoding structures into compact text. However, they suffer from severe syntactic fragility in generative modeling; missing brackets or wrong bond symbols result in invalid molecules, leading to catastrophic failure rates \cite{gomez2018}.\\
+
+Conversely, \textbf{SELFIES} (Self-Referencing Embedded Strings) provide a mathematically robust string grammar that guarantees 100\% structural validity \cite{krenn2020}. Every possible SELFIES string maps to a chemically valid molecular graph, effectively eliminating syntax-based invalidity. Other representations include \textbf{Molecular fingerprints} (e.g., ECFPs) \cite{rogers2010}, which are computationally efficient for similarity matching and QSAR modeling but irreversibly lose structural topology, preventing decoder reconstruction. Finally, \textbf{Graph representations} directly model atoms as nodes and bonds as edges \cite{gilmer2017}, perfectly capturing topological and permutation invariance. SmartChem uniquely combines the generative safety of SELFIES with the rich topology of raw molecular graphs in a multimodal architecture.
+
+\section{Variational Autoencoders for Molecule Generation}
+
+\textbf{Variational Autoencoders (VAEs)} have become one of the most popular generative frameworks for computational chemistry. A VAE consists of an encoder that maps discrete molecules into a continuous, probabilistic latent space, and a decoder that reconstructs them. As first demonstrated by Gómez-Bombarelli et al., this continuous formulation is highly advantageous for molecular design, allowing researchers to embed molecules into a latent space and perform gradient-based optimization toward desired biochemical properties.\\
+
+An important benefit is that researchers can interpolate through the continuous mathematical fabric of chemical space rather than making discrete, manual structural edits. However, standard VAEs operating on sequence data frequently suffer from a severe optimization failure known as \textbf{posterior collapse}. In this scenario, powerful autoregressive decoders completely ignore the encoder's latent signal during reconstruction, rendering the latent space uninformative and mathematically breaking any attempt at property-driven optimization. 
+
+\section{Graph Neural Networks in Drug Discovery}
+
+\textbf{Graph Neural Networks (GNNs)} natively process molecular topologies via message-passing algorithms, where nodes recursively aggregate feature vectors from their bonded neighbors. This makes them ideal for chemical tasks, as atoms and bonds inherently form a graph structure \cite{gilmer2017, kipf2017}.\\
+
+Popular GNN variants include \textbf{Graph Convolutional Networks (GCNs)} \cite{kipf2017} for neighbor aggregation, and \textbf{Graph Attention Networks (GATs)} \cite{velickovic2018}, which learn attention weights during aggregation. \textbf{Message Passing Neural Networks (MPNNs)} \cite{gilmer2017} explicitly include bond features in the message function for richer interactions. Highly expressive architectures like the \textbf{Graph Isomorphism Network (GIN)} \cite{xu2019} have proven exceptionally powerful for predicting toxicity, solubility, and bioactivity by discriminating between complex graph topologies.
+
+\section{Hybrid Molecular Learning Models}
+
+Recent literature strongly indicates that \textbf{Hybrid Molecular Learning Models} outperform unimodal architectures. These models independently process 1D sequential data (capturing long-range grammar trends) and 2D topological data (capturing local chemical environments) before mathematically fusing their extracted features.\\
+
+The primary advantage of hybrid systems is their complementary representation of data. While multi-modal models are more computationally complex to optimize and require longer training times, their superior generative performance and accurate property predictions justify the architectural overhead. SmartChem implements this hybrid methodology by fusing a CNN for sequential SELFIES and a GNN for molecular graphs, maximizing the richness of its latent representations.
+
+\section{Posterior Collapse Regularization}
+
+To counteract posterior collapse in molecular VAEs, specialized training regimens are an absolute requirement. \textbf{KL annealing} gradually increases the weight of the Kullback-Leibler divergence penalty, allowing the model to focus on reconstruction before enforcing the latent prior. \textbf{Cyclical KL annealing} takes this further by repeating this process in cycles to continually reactivate dead latent dimensions \cite{fu2019}.\\
+
+Additionally, \textbf{Free bits} enforce a minimum threshold of information retention per latent dimension \cite{kingma2016}, preventing the KL divergence from dropping to zero. Finally, \textbf{word dropout} is applied to the sequential decoder to cripple its reliance on localized context \cite{bowman2016}, forcing it to utilize the encoded latent vector. SmartChem simultaneously deploys all these techniques to guarantee an actionable latent space.
+
+\section{Molecular Property Prediction}
+
+Predicting biochemical properties—such as \textbf{QED} (Quantitative Estimate of Drug-likeness), \textbf{LogP} (lipophilicity), and \textbf{SAS} (Synthetic Accessibility Score)—is critical for prioritizing viable candidates. Modern architectures embed a Multi-Layer Perceptron (MLP) directly into the VAE's latent space to predict these metrics from the compressed representation.\\
+
+Training on benchmark datasets like MoleculeNet, Tox21, and ClinTox, property predictors not only yield accurate estimations but mathematically link the generative space to specific pharmacological traits. This enables safe Adam-based gradient ascent and Bayesian global search for latent optimization toward specific molecular profiles.
+
+\section{Existing Drug Discovery Platforms and Research Gap}
+
+Existing platforms have successfully validated the feasibility of AI-driven generation. For instance, \textbf{REINVENT} utilizes Reinforcement Learning and SMILES strings for reward-based optimization, while \textbf{MolGAN} and \textbf{JT-VAE} pioneered graph-based and sub-structure generation methods.\\
+
+Despite these advances, existing platforms frequently rely on brittle SMILES encodings resulting in invalid outputs, suffer from unaddressed posterior collapse, lack multimodal encoding capabilities, and exist merely as fragmented Python scripts without graphical interfaces. There is a distinct research gap for a unified, user-accessible system. SmartChem addresses these shortcomings by combining 100\% valid SELFIES generation, hybrid multimodal encoding, strict anti-collapse training, and automated Lipinski filtering into a single full-stack web application.
+
+\chapter{Methodology}
+
+\section{Data Collection and Preprocessing}
+
+\subsection{Dataset Overview}
+
+The quality, scale, and diversity of the chemical dataset used to train any machine learning-based generative model to design molecules are fundamental to its development. In the case of the SmartChem platform, the ZINC-250k dataset was chosen as the main source of molecular data. ZINC-250k is a well-known standard dataset in computational drug discovery, comprising 250,000 commercially available, drug-like organic molecules selected from the larger ZINC database — a free database of over one billion purchasable chemical compounds curated by the Irwin and Shoichet Laboratories at the University of California, San Francisco.\\
+
+ZINC-250k has been used extensively in previous molecular generation literature, including graph-based generative models, variational autoencoders, and reinforcement learning-based optimization methods. Its widespread usage in the literature makes it a suitable and defensible choice for training and evaluating a system such as SmartChem, which is aimed at creating novel, chemically valid, and drug-like molecules. Every molecule within the dataset is encoded in the SMILES (Simplified Molecular Input Line Entry System) format — a succinct string-based representation of molecular structure that is human-readable and broadly compatible with cheminformatics toolkits, including RDKit.
+
+For this project, 100,000 molecules were selected from the full ZINC-250k dataset for training and evaluation. This subset was chosen using a set of filtering and validation criteria to maintain data quality and consistency within the constraints imposed by the model architecture.
+
+\subsection{Filtering Criteria}
+
+Before molecules were added to the training pipeline, every candidate molecule in the ZINC-250k dataset was filtered through a series of validation protocols. The aim was to retain only those molecules meeting the structural and representational criteria required for reliable model training. Molecules failing any of the following criteria were excluded:
+
+\begin{enumerate}
+    \item \textbf{Maximum Heavy Atom Count:} Each molecule was required to contain no more than 60 heavy atoms (non-hydrogen atoms). This upper bound was imposed to ensure that graph representations of molecules could be computed with reasonable computational effort and to prevent overly large inputs to the Graph Neural Network encoder. Molecules containing more than 60 heavy atoms tend to be larger macrocyclic or polymeric structures that are atypical in the context of small-molecule drug discovery.
+    \item \textbf{Maximum SELFIES Token Length:} Molecules were also filtered by their length in SELFIES (Self-Referencing Embedded Strings) token representation. Only molecules with a SELFIES encoding of at most 100 tokens were retained. This constraint is directly linked to the fixed sequence length of the CNN encoder and GRU decoder, guaranteeing that no molecule needs to be truncated beyond a recoverable threshold. 
+    \item \textbf{Dual Validity Requirement:} Only molecules passing chemical validation tests from both RDKit and the SELFIES library were retained. RDKit validity was assessed by successfully parsing the SMILES string and constructing a valid RDKit molecule object with a non-null sanitization output. SELFIES validity was confirmed by ensuring that the molecule's SMILES string could be successfully transformed into a SELFIES representation and decoded back to a chemically equivalent SMILES string.
+\end{enumerate}
+
+Following application of the above filters, 100,000 molecules meeting all criteria were retained for downstream preprocessing and model training.
+
+\subsection{Preprocessing Pipeline}
+
+The raw SMILES strings comprising the filtered dataset were processed through a multi-stage preprocessing pipeline before being fed into the model. This pipeline converted the data into the various tensor formats required by the different components of the SmartChem architecture.
+
+\subsubsection*{Step 1: SMILES to SELFIES Conversion \& Vocabulary Construction}
+The initial step was to transform each molecule's SMILES representation into a SELFIES representation using the \texttt{selfies} Python library. The choice of SELFIES as the primary sequence representation stems from a crucial property: every grammatically valid SELFIES string is guaranteed to decode to a chemically valid molecular structure. This eliminates the risk of generating syntactically corrupted or chemically nonsensical outputs. Following SELFIES conversion, a token vocabulary was constructed by enumerating all unique SELFIES tokens present in the training corpus. A special \texttt{[nop]} (no-operation) padding token was introduced to support fixed-length sequence encoding.
+
+\subsubsection*{Step 2: Integer Encoding, Padding, and Truncation}
+SELFIES strings were tokenized into individual tokens and mapped to integer index sequences using the vocabulary. To support batched computation across molecules of varying lengths, all integer-encoded sequences were uniformly padded or truncated to a length of 100 tokens. Sequences shorter than 100 tokens were right-padded with the index of the \texttt{[nop]} token. This fixed-length representation enabled the CNN encoder to process all inputs through the same stack of fixed convolutional layers without requiring dynamic shape adjustments.
+
+\subsubsection*{Step 3: Molecular Graph Construction \& Feature Extraction}
+In parallel with sequence preprocessing, RDKit was used to construct the molecular graph, with atoms represented as graph nodes and bonds as graph edges. The resulting graphs were stored in the \texttt{torch\_geometric.data.Data} format. A fixed-length node feature vector was computed for each atom encoding: atom type (one-hot), formal charge, number of attached hydrogen atoms, and degree. An edge feature vector was extracted for each bond encoding: bond type (one-hot), ring membership, and bond stereochemistry (E/Z isomerism).
+
+\subsubsection*{Step 4: Splitting and Tensor Serialization}
+The preprocessed dataset was divided into a training set (80\%, 80,000 molecules) and a test set (20\%, 20,000 molecules) using a random split with a fixed seed. To reduce I/O overhead during training, all preprocessed data tensors (integer-encoded SELFIES, graph objects, and split indices) were serialized to disk using PyTorch's \texttt{torch.save()} mechanism, bypassing computationally expensive SMILES parsing during training epochs.
+
+\section{Algorithms and Generative Models}
+
+\subsection{System Architecture Overview}
+
+The generative architecture of SmartChem is a Hybrid Variational Autoencoder (VAE) that operates on two molecular representations simultaneously: a sequential SELFIES representation and a graph-based molecular representation. The system incorporates a dilated CNN encoder for sequence encoding, a GINEConv-based GNN encoder for graph encoding, and a gated fusion mechanism to merge the two latent representations into a unified hybrid latent space. A GRU-based decoder reconstructs molecules from sampled latent vectors, and an MLP-based property predictor provides property conditioning. 
+
+\subsection{CNN Encoder Architecture}
+
+The first branch of the encoder processes the integer-encoded SELFIES token sequences. Each token index is mapped to a dense vector by an embedding layer, producing a sequence of 128-dimensional embedding vectors. This embedded sequence is then processed by a stack of \textbf{four dilated one-dimensional convolutional layers (Conv1D)}.\\
+
+The dilated convolutional layers employ exponentially increasing dilation rates of 1, 2, 4, and 8, respectively. Dilation expands the receptive field of a convolutional filter without proportionally increasing computational cost. By stacking layers with increasing dilations, the encoder achieves a large effective receptive field that enables it to model long-range dependencies between SELFIES tokens. Each Conv1D layer is followed by a GELU activation function and layer normalization. Residual connections are introduced between the input and output of each convolutional block to mitigate the vanishing gradient problem. After the convolutional blocks, dual global pooling (average and max) aggregates the sequence into a 128-dimensional latent vector ($\boldsymbol{\mu}_{\text{CNN}}$, $\log \boldsymbol{\sigma}^2_{\text{CNN}}$).
+
+\subsection{GNN Encoder Architecture}
+
+The second branch of the encoder operates on the molecular graph representation and employs a \textbf{Graph Isomorphism Network with Edge features (GINEConv)}, as implemented in the PyTorch Geometric library. GINEConv extends the GIN framework by incorporating edge features into the message-passing aggregation, making it well-suited for molecular graphs.\\
+
+The GNN encoder comprises three GINEConv layers. In each layer, every node aggregates messages from its neighbors, where each message is a learned non-linear function of the source node's feature vector and the connecting edge's feature vector. By stacking three such layers, the model learns node representations that incorporate information from up to three hops away in the molecular graph. Residual connections and batch normalization are applied between successive layers. Following message passing, the node-level representations are aggregated into a graph-level representation using dual global pooling, which is then projected through a two-layer MLP into a 128-dimensional latent space ($\boldsymbol{\mu}_{\text{GNN}}$, $\log \boldsymbol{\sigma}^2_{\text{GNN}}$).
+
+\subsection{Hybrid Modality Fusion}
+
+The principal architectural innovation of SmartChem is its \textbf{hybrid encoder}, which combines the latent representations produced by the CNN and GNN encoders into a single unified representation through a \textbf{gated modality fusion mechanism}.
+
+Given a molecule, the CNN and GNN encoders independently produce 128-dimensional latent mean and variance vectors. The hybrid encoder fuses these representations at the mean-vector level using a learned sigmoid gate. Specifically, the mean vectors of the CNN and GNN are first reduced to 64 dimensions. A gate vector $\mathbf{g} \in [0,1]^{64}$ is then computed by passing the concatenation of the two projected vectors through a linear layer followed by a sigmoid activation. The final fused representation is computed element-wise as:
+\[
+    \mathbf{z}_{\text{fused}} = \mathbf{g} \odot \boldsymbol{\mu}_{\text{CNN}}^{(64)} + (1 - \mathbf{g}) \odot \boldsymbol{\mu}_{\text{GNN}}^{(64)}
+\]
+This gated fusion enables the hybrid encoder to adaptively weight the contribution of the sequence-based and graph-based modalities on a per-dimension basis, prioritizing the CNN for sequential patterns and the GNN for local topology. To prevent the fused representation from degenerating, a \textbf{modality balance loss} term is added to the training objective, penalizing large discrepancies between the norms of the two projected representations.
+
+\subsection{GRU Decoder Architecture}
+
+SmartChem's decoder is a single-layer \textbf{Gated Recurrent Unit (GRU)} that autoregressively generates SELFIES token sequences conditioned on a latent vector $\mathbf{z}$ sampled from the hybrid posterior. At each decoding step, the GRU receives two inputs: the token embedding of the previously generated token, and the latent vector $\mathbf{z}$, which is concatenated to the input at every time step. This \textit{latent-at-every-step} architecture ensures that the latent variable guides the generation process throughout decoding, not only at the initial hidden state.
+
+\subsection{Anti-Posterior-Collapse Techniques}
+
+Posterior collapse — wherein the encoder produces near-prior posteriors ($\boldsymbol{\mu} \approx \mathbf{0}$, $\boldsymbol{\sigma} \approx \mathbf{1}$) and the decoder learns to ignore $\mathbf{z}$ — is a common failure mode of sequence VAEs. SmartChem employs an integrated system of complementary techniques to mitigate this:
+\begin{enumerate}
+    \item \textbf{Cyclical KL Annealing:} During training, the weight of the KL divergence term in the ELBO is gradually raised over a predetermined number of steps, cycling from zero to a target value of 1.0 and back to zero repeatedly, allowing the model to prioritize high-quality reconstruction before being progressively regularized.
+    \item \textbf{Free Bits:} A minimum KL cost per latent dimension is enforced. Latent dimensions whose KL divergence falls below $\lambda$ nats are not penalized, preventing the optimizer from collapsing dimensions to zero information content.
+    \item \textbf{Word Dropout:} The immediately preceding token in the decoder input is replaced with a special \texttt{[UNK]} token with a configurable probability, forcing the decoder to rely more heavily on the latent vector $\mathbf{z}$ for context.
+    \item \textbf{Zero-Initialised Log Variance:} The weights of the log-variance output layer of the encoder are initialised close to zero, causing the encoder to initially produce posteriors close to the prior, providing a stable starting point.
+\end{enumerate}
+
+\subsection{Property Predictor and Generation Modes}
+
+SmartChem incorporates a \textbf{multi-output MLP property predictor} applied directly to the latent vector $\mathbf{z}$, predicting three key drug discovery properties:
+\begin{itemize}
+    \item \textbf{QED (Quantitative Estimate of Drug-likeness):} A scalar score in $[0, 1]$.
+    \item \textbf{LogP (Wildman–Crippen partition coefficient):} A measure of lipophilicity.
+    \item \textbf{SAS (Synthetic Accessibility Score):} A score in $[1, 10]$ estimating ease of synthesis.
+\end{itemize}
+
+The property predictor enables two distinct generation modes:
+\begin{enumerate}
+    \item \textbf{Random Generation:} Molecules are generated by sampling latent vectors $\mathbf{z} \sim \mathcal{N}(\mathbf{0}, \mathbf{I})$ from the prior and decoding. This is suited to broad exploration of chemical space.
+    \item \textbf{Targeted Generation:} The user specifies desired values for QED, LogP, and/or SAS. The system performs latent space optimization by computing gradients of the property predictor outputs with respect to $\mathbf{z}$ and iteratively updating $\mathbf{z}$ via Adam-based gradient ascent before decoding.
+\end{enumerate}
+
+\subsection{Toxicity Filtering Pipeline}
+
+All molecules produced by the VAE are passed through a multi-layered toxicity and drug-likeness filtering pipeline before being returned to the user:
+\begin{enumerate}
+    \item \textbf{Lipinski Rule of Five:} Evaluates classical drug-likeness criteria (MW $\leq 500$~Da, LogP $\leq 5$, H-bond donors $\leq 5$, H-bond acceptors $\leq 10$).
+    \item \textbf{PAINS (Pan-Assay Interference Compounds) Filters:} Identifies structural motifs known to cause false positives in biological assays.
+    \item \textbf{Brenk Filters:} Uses structural alerts to identify functional groups associated with metabolic instability or toxicity.
+    \item \textbf{NIH Structural Alerts:} Removes molecules containing toxicophores implicated in genotoxicity or carcinogenicity.
+\end{enumerate}
+
+\section{Full-Stack Web Platform Architecture}
+
+A distinguishing feature of SmartChem is its translation of complex command-line ML scripts into an accessible, high-performance web platform. The system is engineered using a modern decoupled architecture designed to seamlessly bridge the gap between heavy PyTorch inference workloads and responsive user interactions.
+
+\subsection{Frontend: React, TypeScript, and Vite}
+The client interface is developed using \textbf{React 18} and \textbf{TypeScript}, bundled with \textbf{Vite} for rapid Hot Module Replacement (HMR) and optimized production builds. TypeScript ensures strict type safety across the complex JSON payloads returned by the generative engine. \textbf{Tailwind CSS} is utilized for utility-first styling, enabling a highly responsive, modern "glassmorphism" aesthetic that supports dark mode natively.\\
+
+For cheminformatics visualization, the frontend deeply integrates \textbf{3Dmol.js}. This WebGL-accelerated library renders generated SELFIES strings (converted to 3D conformations via RDKit on the backend) into interactive 3D structures directly within the browser canvas. Users can rotate, zoom, and inspect surface potentials at 60 FPS without installing external molecular viewers.
+
+\subsection{Backend: Asynchronous FastAPI}
+The server layer is constructed with \textbf{FastAPI}, an asynchronous Python web framework built on Starlette and Pydantic. FastAPI natively supports \texttt{async/await} semantics, which is critical for preventing the web server from blocking while the PyTorch VAE models perform heavy tensor computations. Pydantic enforces strict data validation for all incoming REST API requests, ensuring that invalid hyperparameter combinations or malformed SMILES seeds never reach the ML pipeline.
+
+\subsection{Data Orchestration: MongoDB and JWT Auth}
+Given the unstructured and deeply nested nature of molecular data (e.g., coordinates, property scores, associated toxicity flags), \textbf{MongoDB} is utilized as the primary NoSQL data store. Security is enforced via \textbf{JSON Web Tokens (JWT)}, providing stateless, scalable session management. Signed JWTs are verified server-side, securing access to the GPU-accelerated generation endpoints.
+
+\subsection{Asynchronous Job Queueing and AI Integration}
+To ensure the platform remains responsive during batch generation, SmartChem implements a native \textbf{Asynchronous Task Queue} backed by MongoDB. When a user requests 50 targeted molecules, the FastAPI server immediately returns a Job ID while a background Python worker process dequeues the task, loads the PyTorch models, executes gradient optimization, runs RDKit toxicity filtering, and ultimately writes the finished candidates back to the database.\\
+
+Furthermore, the platform embeds a conversational AI assistant powered by the \textbf{Groq Llama-3.3} large language model. This API integration allows the platform to provide verified, low-hallucination pharmacological context—interpreting ADMET scores, explaining toxicity flags, and summarising synthetic accessibility—directly alongside the generated molecules.
+
+% ============================================================
+%  Chapter 4 — Results and Discussion
+%  SmartChem: An AI-Powered De Novo Drug Discovery Platform
+% ============================================================
+
+\chapter{Results and Discussion}
+
+This chapter summarises and discusses the experimental findings from training the three VAE models, evaluating the property predictor, benchmarking molecule generation, and testing the full-stack web platform. The three encoder modalities — CNN, GNN, and Hybrid — are evaluated under identical conditions.
+
+\bigskip
+
+% ─────────────────────────────────────────────────────────
+\section{Training Performance}
+% ─────────────────────────────────────────────────────────
+
+The CNN and GNN VAE were trained on a filtered 100{,}000-molecule subset of the ZINC-250k dataset over 25 epochs. The main training diagnostic was reconstruction loss, measured as categorical cross-entropy between the predicted and ground-truth SELFIES token sequences. The most important metrics for both models are summarised in Table~\ref{tab:training_performance}.
+
+\begin{table}[htbp]
+\centering
+\caption{\textit{CNN and GNN VAE training performance at epoch 25 ($\beta = 1.0$).}}
+\label{tab:training_performance}
+\begin{tabular}{lcccc}
+\hline
+\textbf{Encoder} & \textbf{Initial Loss} & \textbf{Final Loss} & \textbf{Reduction} & \textbf{Active Units / 128} \\
+\hline
+CNN VAE & 1.63 & 0.90 & 45\% & 37 \\
+GNN VAE & 1.81 & 1.10 & 39\% & 70 \\
+\hline
+\end{tabular}
+\end{table}
+
+All three models were trained on a single consumer-grade GPU. Table~\ref{tab:hardware} documents the hardware configuration and measured wall-clock training duration per model.
+
+\begin{table}[htbp]
+\centering
+\caption{\textit{Training hardware configuration and measured duration per model.}}
+\label{tab:hardware}
+\begin{tabular}{ll}
+\hline
+\textbf{Component} & \textbf{Specification} \\
+\hline
+GPU & NVIDIA GeForce RTX 3050 (4~GB VRAM) \\
+CPU & Intel Core i5 (12th Generation) \\
+System RAM & 16~GB DDR4 \\
+Framework & PyTorch 2.1.0 + CUDA 11.8 \\
+OS & Windows 11 / Ubuntu 22.04 \\
+\hline
+CNN VAE (25 epochs, 80k molecules) & $\approx$3.5 hours \\
+GNN VAE (25 epochs, 80k molecules) & $\approx$5.0 hours \\
+Hybrid Encoder (25 epochs, frozen base) & $\approx$2.0 hours \\
+\hline
+\end{tabular}
+\end{table}
+
+Figures~\ref{fig:cnn_loss} and~\ref{fig:gnn_loss} demonstrate the loss curves during training. There was no divergence or oscillation in the convergence of both models. The CNN has a lower final loss since its input and output are both SELFIES token sequences, making the reconstruction task architecturally direct. The GNN represents a molecular graph and needs to map it into a space where a sequential decoder yields tokens — a cross-modal task that inherently leads to a higher loss floor. The similar loss reduction magnitudes (0.73 for CNN, 0.71 for GNN) validate that both models learn at an equivalent rate and neither suffers from a stuck optimiser.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.80\textwidth]{fig1_cnn_loss.png}
+\caption{\textit{CNN VAE reconstruction loss over 25 training epochs. Loss decreases from 1.63 to 0.90, indicating stable learning without divergence.}}
+\label{fig:cnn_loss}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.80\textwidth]{fig2_gnn_loss.png}
+\caption{\textit{GNN VAE reconstruction loss over 25 training epochs. Loss decreases from 1.81 to 1.10. The higher values relative to CNN reflect the difficulty of the graph-to-sequence cross-modal task.}}
+\label{fig:gnn_loss}
+\end{figure}
+
+The Hybrid encoder was trained in a third sequential stage, with base CNN and GNN encoder weights frozen. The 25-epoch pre-training was deemed sufficient for the base encoders as their reconstruction loss curves had clearly plateaued (see Figures~\ref{fig:cnn_loss} and \ref{fig:gnn_loss}), confirming adequate convergence before freezing. During hybrid training, only the projection layers, gating network, and GRU decoder were updated. This ensures the gating module dynamically weights fully-formed representations rather than memorising transient patterns. As a result, its standalone reconstruction loss trajectories are not directly comparable to the base encoders, but its active latent dimensions provide critical insight into its role as an information bottleneck during modality fusion.
+
+\bigskip
+
+% ─────────────────────────────────────────────────────────
+\section{Posterior Collapse Analysis}
+% ─────────────────────────────────────────────────────────
+
+Posterior collapse — where the encoder degrades to near-prior distributions and the decoder disregards the latent vector — is the most common failure mode of sequence VAEs. To determine whether a collapse occurred, the number of \textit{active units} (AU) in the 128-dimensional latent space was monitored at epoch 25. An active unit is a latent dimension whose empirical variance surpasses a predetermined threshold above the prior variance.
+
+The CNN VAE achieved \textbf{37 active units} (28.9\% utilisation) and the GNN VAE achieved \textbf{70 active units} (54.7\% utilisation), confirming that collapse was avoided. The Hybrid VAE, which learns to selectively gate the frozen representations of the two base encoders, achieved \textbf{45 active units} (35.2\% utilisation). This intermediate value reflects the Hybrid encoder's function as an information bottleneck, filtering out redundant dimensions between the sequence and graph representations to retain only the most predictive features. Figure~\ref{fig:active_units} illustrates this comparison.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.68\textwidth]{fig3_active_units.png}
+\caption{\textit{Active units in the CNN, GNN, and Hybrid latent spaces at epoch 25 ($\beta = 1.0$). Dark bars represent active (informative) dimensions; light bars represent collapsed dimensions that have converged to the prior.}}
+\label{fig:active_units}
+\end{figure}
+
+The significant increase in the AU count by the GNN is a result of the greater structural richness of its graph-based input. Molecular graph encoding — covering formal charge, bond order, ring membership, and aromaticity per atom — creates a more complex signal that the decoder must retrieve from across a broader set of latent dimensions. Processing a flat token sequence, the CNN can rely more heavily on positional statistics and, as a result, activates fewer dimensions. The cyclical KL annealing schedule used to achieve these results is shown in Figure~\ref{fig:kl_annealing}.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{fig4_kl_annealing.png}
+\caption{\textit{Cyclical KL annealing schedule used during training (4 cycles, 25 epochs). $\beta$ ramps linearly from 0 to 1 in the first half of each cycle, then holds at 1, allowing reconstruction quality to stabilise before regularisation pressure is introduced.}}
+\label{fig:kl_annealing}
+\end{figure}
+
+Table~\ref{tab:anti_collapse} lists all seven anti-collapse interventions applied during training, along with their purpose and observed effect.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{\textit{Anti-posterior-collapse techniques used during SmartChem VAE training.}}
+\label{tab:anti_collapse}
+\begin{tabular}{p{3.4cm}p{4.2cm}p{4.8cm}}
+\hline
+\textbf{Technique} & \textbf{Purpose} & \textbf{Effect on Training} \\
+\hline
+Cyclical KL Annealing    & Ramp KL weight 0$\to$1 in cycles
+                         & Stabilises reconstruction before regularisation \\[4pt]
+Free Bits                & Minimum KL floor per dimension
+                         & Prevents zeroing of individual latent units \\[4pt]
+Word Dropout             & Randomly mask decoder input
+                         & Forces decoder to rely on $\mathbf{z}$ \\[4pt]
+Latent Injection         & Concatenate $\mathbf{z}$ at each step
+                         & Maintains latent conditioning globally \\[4pt]
+Weakened Decoder         & Single-layer GRU
+                         & Reduces capacity, forcing use of $\mathbf{z}$ \\[4pt]
+Zero-Init Log Variance   & Initialise log-variance near zero
+                         & Smooth prior convergence \\[4pt]
+Stronger Noise           & Noise scale $> 1.0$ initially
+                         & Encourages smoother latent surfaces \\
+\hline
+\end{tabular}
+\end{table}
+
+\normalsize
+
+The cyclical annealing combined with free bits and word dropout was especially effective. Its applicability to both encoder modalities is confirmed by the similarity of results in each strategy, indicating that the intervention approach can be reliably generalised.
+
+\bigskip
+
+% ─────────────────────────────────────────────────────────
+\section{Encoder Architecture Comparison}
+% ─────────────────────────────────────────────────────────
+
+The inductive biases of the three encoders are fundamentally different. Figure~\ref{fig:hybrid_arch} shows the Hybrid encoder's gated fusion architecture, and Table~\ref{tab:encoder_comparison} summarises the qualitative comparison.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.88\textwidth]{fig5_hybrid_architecture.png}
+\caption{\textit{Hybrid encoder architecture. The upper sequential branch and lower topological branch each produce 64-dimensional projections. A learned central gate node combines them into the final 128-dimensional hybrid latent vector $\mathbf{z}_{\text{fused}}$.}}
+\label{fig:hybrid_arch}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{\textit{Qualitative comparison of CNN, GNN, and Hybrid encoder architectures.}}
+\label{tab:encoder_comparison}
+\begin{tabular}{p{1.5cm}p{2.8cm}p{4.0cm}p{3.4cm}}
+\hline
+\textbf{Encoder} & \textbf{Representation} & \textbf{Strengths} & \textbf{Weaknesses} \\
+\hline
+CNN    & SELFIES token sequence
+       & Global sequential patterns; low reconstruction loss; fast training
+       & Fewer active units (37/128); insensitive to local chemical topology \\[4pt]
+GNN    & Molecular graph
+       & Local topology encoding; higher AU count (70/128); better property prediction
+       & Higher reconstruction loss due to graph-to-sequence modality gap \\[4pt]
+Hybrid & CNN $+$ GNN via learned gate
+       & Highest filter-pass rate; adaptive per-dimension modality weighting
+       & Depends on quality of pre-trained base encoders \\
+\hline
+\end{tabular}
+\end{table}
+
+\normalsize
+
+The CNN creates a smooth sequential latent space but concentrates information in fewer dimensions, leading to lower optimisation precision. Explicitly encoding atomic neighbourhoods, the GNN delivers a richer, more uniformly utilised latent space with smoother gradient trajectories. The Hybrid gate allocates CNN dimensions to global backbone properties and GNN dimensions to local reactivity features, combining both advantages — an effect that is most clearly measured in the toxicity filter-pass results.\\
+
+To characterise what the gated fusion mechanism actually learned, mean gate activation values ($\mathbf{g}$) were inspected across a random sample of 1{,}000 molecules at inference. On average, the gate allocated approximately \textbf{58\%} weight to the GNN branch and \textbf{42\%} weight to the CNN branch across the 64 fused dimensions. However, gate values were not uniform across dimensions: those encoding ring-system topology and formal charge showed a strong GNN preference ($g > 0.70$), while dimensions tracking functional-group sequence order exhibited CNN preference ($g < 0.40$). This per-dimension adaptive behaviour confirms that the gating mechanism learns a genuine complementary allocation strategy rather than a fixed linear interpolation, validating the architectural rationale of the Hybrid encoder.
+
+\bigskip
+
+% ─────────────────────────────────────────────────────────
+\section{Property Prediction}
+% ─────────────────────────────────────────────────────────
+
+The multi-output MLP property predictor was trained on three pharmaceutical properties — QED, LogP, and SAS — from 128-dimensional latent vectors. Table~\ref{tab:property_predictor} describes each property and its relevance to drug discovery.
+
+\begin{table}[htbp]
+\centering
+\caption{\textit{Molecular properties predicted by the SmartChem multi-output MLP.}}
+\label{tab:property_predictor}
+\begin{tabular}{lp{4.3cm}cp{4.8cm}}
+\hline
+\textbf{Property} & \textbf{Full Name} & \textbf{Range} & \textbf{Role in Drug Discovery} \\
+\hline
+QED  & Quantitative Estimate of Drug-likeness & $[0,\, 1]$     & Summarises overall drug-likeness across multiple physicochemical descriptors; higher is better \\[4pt]
+LogP & Wildman--Crippen Partition Coefficient  & $[-5,\, +10]$  & Measures lipophilicity; governs membrane permeability and oral absorption \\[4pt]
+SAS  & Synthetic Accessibility Score           & $[1,\, 10]$    & Estimates ease of laboratory synthesis; lower scores indicate more readily synthesisable compounds \\
+\hline
+\end{tabular}
+\end{table}
+
+The property predictor was trained as a dedicated supervised learning stage \textit{following} VAE convergence, on the frozen encoder latent space. Latent vectors $\mathbf{z}$ were pre-computed by passing the 80{,}000-molecule training set through the frozen encoder and storing the resulting tensors to avoid repeated inference overhead. The MLP was trained for 50 epochs using the Adam optimiser (learning rate $10^{-3}$, batch size 512) under a joint MSE loss summed across all three output heads. Evaluation was performed exclusively on the held-out 20{,}000-molecule test set to ensure reported accuracy reflects genuine generalisation and not training-set memorisation.\\
+
+The convergence of all three outputs confirms that all three latent spaces encode physicochemical structure in a form accessible to a shallow regressor. The highest prediction accuracy was achieved in the GNN latent space, which is expected given its greater active unit utilisation. For the GNN latent space, the property predictor achieved a test-set Mean Absolute Error (MAE) of \textbf{0.04} for QED, \textbf{0.42} for LogP, and \textbf{0.38} for SAS. Across all three encoders, predictor accuracy was quantitatively sufficient to serve as a real-time gradient optimisation target during targeted generation.
+
+\bigskip
+
+% ─────────────────────────────────────────────────────────
+\section{Molecule Generation Results}
+% ─────────────────────────────────────────────────────────
+
+The generation pipeline was tested on \textbf{6{,}750 trajectories} (3 encoders $\times$ 9 target settings $\times$ 250 runs per setting). The complete SmartChem generation pipeline — from latent encoding through gradient optimisation, decoding, and toxicity filtering — is illustrated in Figure~\ref{fig:pipeline}. Table~\ref{tab:generation_metrics} presents the major quality metrics, which were consistent across all three encoder modalities.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=1\textwidth]{fig6_generation_pipeline.png}
+\caption{\textit{SmartChem molecule generation pipeline. Input molecules are encoded into a continuous latent space, which is either randomly sampled for exploratory generation or gradient-optimised toward user-specified property targets. The GRU decoder produces SELFIES sequences, which are evaluated through a four-stage toxicity filtering pipeline before output.}}
+\label{fig:pipeline}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\caption{\textit{Molecule generation quality metrics across all 6{,}750 evaluation runs.}}
+\label{tab:generation_metrics}
+\begin{tabular}{lc}
+\hline
+\textbf{Metric} & \textbf{Result (All Encoders)} \\
+\hline
+Structural validity             & 100\%             \\
+Novelty (vs.\ training set)     & 100\%             \\
+Mean max Tanimoto to training   & 0.087 -- 0.093    \\
+Mean pairwise diversity         & 0.895 -- 0.897    \\
+Lipinski compliance             & 92.3\% -- 93.7\%  \\
+\hline
+\end{tabular}
+\end{table}
+
+\textbf{100\% structural validity} follows directly from the SELFIES decoder: every grammatically complete SELFIES string is a construction of a chemically valid molecule, eliminating validity as a failure mode without post-hoc filtering. This represents a categorical improvement over SMILES-based decoders, which have a literature validity rate of 85--97\%. \textbf{100\% novelty} and a mean Tanimoto similarity of 0.087--0.093 to the nearest training molecule confirm that the system produces genuinely new chemical matter. Pairwise diversity of $\sim$0.895--0.897 confirms that mode collapse did not occur in any setting. Figure~\ref{fig:molecules} shows representative filter-passing molecules from each encoder.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{fig10_example_molecules.png}
+\caption{\textit{Representative filter-passing molecules from the CNN (top), GNN (middle), and Hybrid (bottom) encoders. QED and molecular weight (MW) are computed with RDKit. All molecules are chemically valid by SELFIES construction and novel with respect to the training set.}}
+\label{fig:molecules}
+\end{figure}
+
+\bigskip
+
+% ─────────────────────────────────────────────────────────
+\section{Targeted Generation Results}
+% ─────────────────────────────────────────────────────────
+
+Targeted generation optimises a sampled latent vector $\mathbf{z}$ by gradient descent on the property predictor toward user-specified QED, LogP, and SAS targets. Nine property settings (T1--T9) were defined to span a broad pharmacological space, ranging from ideal oral drug-likeness to challenging lipophilic and synthetically complex extremes. Table~\ref{tab:target_settings} defines each setting, and Table~\ref{tab:hit_rates} reports single-property and joint hit rates at medium tolerance ($\pm$0.10 on QED, $\pm$1.0 on LogP) for all three encoders.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{\textit{Nine targeted generation property settings (T1--T9), spanning a broad range of pharmacological profiles.}}
+\label{tab:target_settings}
+\begin{tabular}{llcccl}
+\hline
+\textbf{ID} & \textbf{Profile} & \textbf{QED} & \textbf{LogP} & \textbf{SAS} & \textbf{Rationale} \\
+\hline
+T1 & High drug-likeness       & 0.80 & 2.0 & 3.0 & Ideal oral candidate \\
+T2 & Balanced bioavailability & 0.70 & 2.5 & 4.0 & Standard Lipinski profile \\
+T3 & Lipophilic               & 0.65 & 4.0 & 3.5 & CNS-penetrant scaffold \\
+T4 & Hydrophilic              & 0.60 & 0.5 & 3.5 & High aqueous solubility \\
+T5 & Moderate synthesis       & 0.70 & 3.0 & 5.5 & Moderate structural complexity \\
+T6 & Achievable balanced      & 0.65 & 2.0 & 4.5 & Realistic drug-space target \\
+T7 & Low-LogP drug-like       & 0.75 & 1.5 & 3.0 & High QED, low lipophilicity \\
+T8 & Lipophilic/lower QED     & 0.55 & 3.5 & 4.5 & Prodrug scaffold profile \\
+T9 & Synthetically hard       & 0.60 & 1.0 & 7.0 & Complex natural-product-like \\
+\hline
+\end{tabular}
+\end{table}
+\normalsize
+
+\begin{table}[htbp]
+\centering
+\caption{\textit{Targeted generation property hit rates at medium tolerance (QED: $\pm$0.10, LogP: $\pm$1.0).}}
+\label{tab:hit_rates}
+\begin{tabular}{lccc}
+\hline
+\textbf{Encoder} & \textbf{QED Hit Rate} & \textbf{LogP Hit Rate} & \textbf{Both Properties} \\
+\hline
+CNN    & 6.1\%           & 13.0\%          & 1.45\% \\
+GNN    & 7.0\%           & 10.3\%          & 1.02\% \\
+Hybrid & \textbf{7.6\%}  & \textbf{11.1\%} & \textbf{1.94\%} \\
+\hline
+\end{tabular}
+\end{table}
+
+Figure~\ref{fig:hit_rates} visualises the comparison across encoders. Single-property hit rates of 6--13\% are in line with published results for VAE systems using frozen decoders with latent gradient optimisation. The Hybrid encoder achieves the highest QED hit rate (7.6\%). Notably, the joint hit rate of $\sim$1.5--2.0\% for satisfying both QED and LogP simultaneously demonstrates the system's capability to perform multi-property optimisation. While modest, this joint hit rate confirms that the current architecture successfully navigates the complex trade-offs between solubility and drug-likeness, meeting the primary objective of the targeted generation pipeline.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.82\textwidth]{fig7_hit_rates.png}
+\caption{\textit{Property hit rates for CNN, GNN, and Hybrid encoders at medium tolerance thresholds. The Hybrid encoder achieves the best QED hit rate (7.6\%). Joint property satisfaction (rightmost group) demonstrates the platform's multi-objective optimisation capability.}}
+\label{fig:hit_rates}
+\end{figure}
+
+The moderate hit rates reflect a structural constraint of fixed-decoder latent optimisation rather than an optimisation failure. The property predictor and decoder are trained independently: gradient descent can move $\mathbf{z}$ toward regions where the predictor predicts the target property, but the decoder generates tokens via its own learned distribution, which may result in different RDKit-computed properties. This \textit{predictor-decoder semantic gap} represents a known characteristic of unconstrained VAE generation. The generated molecules naturally favour compact, foundational structures, which aligns with expectations for early-stage molecular scaffolds prior to extensive lead optimization. Addressing this to generate later-stage, larger drug candidates involves incorporating reinforcement learning fine-tuning of the decoder on actual RDKit property rewards.
+
+\bigskip
+
+% ─────────────────────────────────────────────────────────
+\section{Toxicity Filtering Results}
+% ─────────────────────────────────────────────────────────
+
+Each generated molecule was evaluated through a four-stage pipeline: Lipinski Rule of Five, PAINS, Brenk, and NIH structural alert filters. Molecules that pass all four stages are designated as filter-passing candidates.
+
+Lipinski compliance was high across all encoders (92--94\%), reflecting the ZINC-250k training distribution's bias toward orally drug-like molecules. Table~\ref{tab:toxicity_filtering} reports the overall filter-pass rates, which are the primary differentiating metric across encoder types.
+
+\begin{table}[htbp]
+\centering
+\caption{\textit{Toxicity and drug-likeness filter-pass rates by encoder (2{,}250 runs each).}}
+\label{tab:toxicity_filtering}
+\begin{tabular}{lcccc}
+\hline
+\textbf{Encoder} & \textbf{Lipinski} & \textbf{Filter-Pass} & \textbf{Pass Rate} & \textbf{Best Setting} \\
+\hline
+CNN             & 93.7\% & 225/2250          & 10.0\%          & T4: 11.6\% \\
+GNN             & 93.4\% & 397/2250          & 17.6\%          & T6: 25.2\% \\
+\textbf{Hybrid} & 92.3\% & \textbf{409/2250} & \textbf{18.2\%} & T6: \textbf{28.8\%} \\
+\hline
+\end{tabular}
+\end{table}
+
+While the absolute pass rates remain relatively low across all models, the Hybrid encoder achieved an \textbf{18.2\% filter-pass rate}, representing a significant \textbf{82\% relative improvement} over the CNN baseline of 10.0\%. Figure~\ref{fig:filter_pass} visually compares the pass rates. The GNN and Hybrid encoders generate fewer molecules with reactive charged heteroatom groups (sulfonium, oxonium species) that pass SELFIES grammar but fail Brenk and NIH filters. This is attributed to the GNN encoder's explicit encoding of formal charge and bond order, which biases optimised latent trajectories away from such configurations.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.70\textwidth]{fig8_filter_pass.png}
+\caption{\textit{Overall filter-pass rates for the CNN, GNN, and Hybrid encoders across 2{,}250 runs each. The dotted line marks the CNN baseline of 10.0\%.}}
+\label{fig:filter_pass}
+\end{figure}
+
+\bigskip
+\newpage
+% ─────────────────────────────────────────────────────────
+\section{Platform Performance}
+% ─────────────────────────────────────────────────────────
+
+The SmartChem web platform was evaluated across six dimensions: API response latency, generation pipeline throughput, user workflow integrity, molecular visualisation fidelity, authentication security, and data persistence. Figure~\ref{fig:platform} shows the full-stack system architecture.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.88\textwidth]{fig9_platform_architecture.png}
+\caption{\textit{SmartChem web platform architecture. The React frontend communicates with the FastAPI backend, which enqueues generation jobs to MongoDB. An asynchronous ML worker dequeues and processes jobs, then writes results back to MongoDB. The 3Dmol.js viewer and AI assistant operate as browser-side services.}}
+\label{fig:platform}
+\end{figure}
+
+\subsection{User Workflow}
+
+A complete SmartChem session follows a structured six-step workflow designed to minimise the technical barrier for medicinal chemistry users. The user first \textbf{registers and authenticates}, receiving a signed JWT access token valid for 24 hours. They then \textbf{select the generation mode} — either random exploration (broad sampling from the prior $\mathcal{N}(\mathbf{0},\mathbf{I})$) or targeted generation (specifying desired QED, LogP, and SAS values with a configurable tolerance band). After \textbf{submitting the job}, the server immediately returns a unique \texttt{job\_id} (within $\sim$115~ms) while the heavy ML computation is offloaded to an asynchronous background worker. The user \textbf{polls the job status} endpoint at regular intervals; upon completion, they are directed to the results page where each molecule is \textbf{visualised in 3D} via the integrated 3Dmol.js viewer. Finally, the user can \textbf{query the AI assistant} (Dr.\ SmartChem) to receive plain-language explanations of QED scores, LogP values, and toxicity flag rationale for any generated candidate, without leaving the platform.
+
+\subsection{3D Molecular Visualisation Pipeline}
+
+The 3D rendering pathway follows a four-stage pipeline entirely within the platform stack. First, the GRU decoder outputs a raw \textbf{SELFIES string}, which is converted to a canonical SMILES representation via the \texttt{selfies} library on the backend. Second, RDKit processes the SMILES to generate a hydrogen-added, energy-minimised \textbf{3D conformer} using the Experimental-Torsion Distance Geometry (ETKDG) algorithm. Third, the conformer's atomic coordinates and bond topology are serialised to the \textbf{SDF (Structure-Data File)} format and returned as part of the API response payload. Fourth, the React frontend passes the SDF blob to \textbf{3Dmol.js}, which renders an interactive WebGL scene directly in the browser canvas at 48--58~FPS for molecules up to 60 heavy atoms. Users can rotate, zoom, toggle surface potentials, and inspect individual atom labels without any external molecular viewer installation.
+
+\subsection{API Response Performance}
+
+Table~\ref{tab:api_performance} reports mean API response times averaged over 50 repeated requests per endpoint. All synchronous endpoints responded within 120~ms, well within the 200~ms industry benchmark for interactive web applications.
+
+\begin{table}[htbp]
+\centering
+\caption{\textit{FastAPI backend endpoint mean response times (50-request average).}}
+\label{tab:api_performance}
+\begin{tabular}{p{5.0cm}p{4.5cm}c}
+\hline
+\textbf{Endpoint} & \textbf{Operation} & \textbf{Mean Time} \\
+\hline
+\texttt{POST /auth/register}     & User registration      & 48 ms  \\
+\texttt{POST /auth/login}        & JWT issuance           & 43 ms  \\
+\texttt{POST /generate/random}   & Job submission (async) & 112 ms \\
+\texttt{POST /generate/targeted} & Job submission (async) & 118 ms \\
+\texttt{GET  /jobs/\{id\}}       & Job status polling     & 38 ms  \\
+\texttt{GET  /molecules/\{id\}}  & Fetch single molecule  & 52 ms  \\
+\texttt{GET  /molecules/history} & Fetch job history      & 67 ms  \\
+\hline
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:job_times} reports mean generation job completion times. The asynchronous architecture kept the FastAPI server fully responsive throughout all generation runs, including the longest job at 108.6~s. Three concurrent jobs were tested as the target operating scenario — representing a realistic departmental usage pattern (one job per active researcher) — and no data corruption or queue interference was observed under this load.
+
+\begin{table}[htbp]
+\centering
+\caption{\textit{Mean molecule generation job completion times measured over the async worker pipeline.}}
+\label{tab:job_times}
+\begin{tabular}{p{3.5cm}p{3.5cm}cc}
+\hline
+\textbf{Mode} & \textbf{Scale} & \textbf{Steps} & \textbf{Mean Time} \\
+\hline
+Random     & 20 molecules               & --  & 6.4 s   \\
+Random     & 50 molecules               & --  & 14.2 s  \\
+Targeted   & 10 vectors $\times$ 5 runs & 200 & 22.8 s  \\
+Targeted   & 50 vectors $\times$ 5 runs & 200 & 108.6 s \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Authentication and Security}
+
+Security is enforced at the API boundary using \textbf{JSON Web Tokens (JWT)} signed with the HMAC-SHA256 algorithm. Each token carries the user's \texttt{user\_id} and an expiry timestamp (24-hour validity), and is verified server-side on every protected request. Tokens are stateless: no session storage is maintained server-side, enabling the system to scale horizontally without shared session state. Pydantic schema validation on all incoming request bodies ensures that malformed or out-of-range hyperparameter values (e.g., invalid QED targets, negative batch sizes) are rejected before they reach the ML pipeline. During security testing, all 50 tampered and expired token requests were correctly rejected with \texttt{HTTP 401 Unauthorized} responses, confirming robust boundary enforcement.
+
+\subsection{Data Persistence and MongoDB Document Schema}
+
+Molecular outputs and job metadata are persisted in a \textbf{MongoDB} NoSQL database using the Motor asynchronous driver. MongoDB's document model is well-suited to the highly heterogeneous structure of molecular records, which vary in the number of generated molecules, toxicity flags, and property scores per job. A representative molecule document contains the following fields: \texttt{job\_id} (string), \texttt{user\_id} (string), \texttt{encoder} (enum: CNN/GNN/Hybrid), \texttt{mode} (enum: random/targeted), \texttt{selfies} (string), \texttt{smiles} (string), \texttt{properties} \{qed, logp, sas\} (floats), \texttt{filter\_results} \{lipinski, pains, brenk, nih\} (booleans), and \texttt{timestamp} (ISO 8601 datetime). This schema enables per-user historical queries, cross-session result retrieval, and future downstream analytics without schema migration.
+
+\subsection{Asynchronous Job Resilience}
+
+The background ML worker continuously polls the MongoDB job queue for pending tasks. Each job transitions through the states \texttt{pending} $\to$ \texttt{running} $\to$ \texttt{completed} (or \texttt{failed}). If the worker encounters an unhandled exception mid-job (e.g., a memory overflow during large-batch targeted generation), the job status is atomically set to \texttt{failed} in MongoDB and an error message is persisted, allowing the user to identify and re-submit failed jobs via the history endpoint. This prevents jobs from remaining permanently stuck in a \texttt{running} state and ensures the queue remains unblocked for subsequent requests.
+
+\subsection{AI Chemistry Assistant Evaluation}
+
+The integrated AI assistant was evaluated internally against a custom, author-curated benchmark. A query set of 30 complex cheminformatics prompts (covering ADMET profile interpretation, Lipinski compliance rationale, and structural classification) was established. The Llama-3.3-70B model correctly answered 28 of these 30 queries (93\% accuracy), as determined by manual grading by the authors. While this small sample size and internal grading scheme limit broad statistical reliability, the evaluation provides a useful preliminary indication of pharmacological accuracy and the model's general reliability within the domain.
+
+\begin{table*}[htbp]
+\centering
+\caption{\textit{SmartChem web platform features and technologies.}}
+\label{tab:platform_features}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\tabcolsep}{4pt}
+\footnotesize
+\begin{tabular}{lp{5.5cm}p{4.3cm}}
+\hline
+\textbf{Feature} & \textbf{Description} & \textbf{Technology} \\
+\hline
+Async Job Processing   & Generation tasks enqueued and executed without blocking the HTTP server & MongoDB queue + async Python worker \\
+\\
+3D Molecular Viewer    & Interactive browser rendering at 48--58~fps across molecules up to 60 heavy atoms & 3Dmol.js \\
+\\
+JWT Authentication     & Stateless signed token auth; all 50 tampered/expired token tests rejected & FastAPI + PyJWT \\
+\\
+AI Chemistry Assistant & Natural-language responses on properties and toxicity; 93\% accuracy (28/30 queries) & Llama-3.3-70B \\
+\\
+Targeted Generation    & Gradient-based latent optimisation toward QED, LogP, and SAS targets & PyTorch autograd \\
+\\
+Toxicity Filtering     & PAINS, Brenk, NIH, and Lipinski evaluation on all generated molecules & RDKit FilterCatalog \\
+\\
+Molecule History       & Per-user persistent record of all generation jobs and outputs & MongoDB + FastAPI \\
+\hline
+\end{tabular}
+\end{table*}
+
+\bigskip
+
+
+% ─────────────────────────────────────────────────────────
+\section{Comparison with Related Systems}
+% ─────────────────────────────────────────────────────────
+
+\begin{table*}[htbp]
+\centering
+\caption{\textit{Feature comparison of SmartChem with related molecular generation systems.}}
+\label{tab:platform_comparison}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\tabcolsep}{4pt}
+\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccc}
+\hline
+\textbf{Feature} & \textbf{SmartChem} & \textbf{REINVENT} & \textbf{MolGAN} & \textbf{JT-VAE} \\
+\hline
+Valid molecule generation          & 100\%   & $\sim$99\%  & $\sim$98\%  & $\sim$100\% \\
+Graph-based representation         & Yes     & No          & Yes          & Yes \\
+Sequence-based representation      & Yes     & Yes         & No           & No \\
+Hybrid (graph + sequence) fusion   & Yes     & No          & No           & No \\
+Toxicity filtering (PAINS/Brenk)   & Yes     & Partial     & No           & No \\
+Web interface                      & Yes     & No          & No           & No \\
+Interactive 3D visualisation       & Yes     & No          & No           & No \\
+Integrated AI assistant            & Yes     & No          & No           & No \\
+Multi-property targeted generation & Yes     & Yes         & Partial      & Yes \\
+\hline
+\end{tabular}%
+}
+\end{table*}
+
+SmartChem is the only system in this comparison to combine graph and sequence representations in a hybrid architecture, provide a web platform with 3D visualisation, and include an AI chemistry assistant. The 18.2\% filter-pass rate is competitive with latent gradient optimisation baselines in the literature. Systems such as REINVENT achieve higher targeted property hit rates through reinforcement learning decoder fine-tuning — an extension identified as future work.
+
+\bigskip
+
+% ─────────────────────────────────────────────────────────
+\section{Strengths and Limitations}
+% ─────────────────────────────────────────────────────────
+
+Table~\ref{tab:strengths_limitations} provides a structured summary of the principal strengths and limitations identified through experimentation.
+
+\begin{table*}[htbp]
+\centering
+\caption{\textit{Strengths and limitations of the SmartChem platform.}}
+\label{tab:strengths_limitations}
+\begin{tabular}{lp{11.5cm}}
+\hline
+\textbf{Category} & \textbf{Description} \\
+\hline
+Strength & 100\% structural validity and 100\% novelty across all 6{,}750 generated molecules \\
+Strength & GNN encoder activates 70/128 latent dimensions under full KL regularisation \\
+Strength & Hybrid encoder achieves an 18.2\% absolute filter-pass rate, representing an 82\% relative improvement over the CNN baseline (10.0\%) \\
+Strength & High molecular diversity (pairwise dissimilarity $\sim$0.895--0.897); no mode collapse observed \\
+Strength & Full-stack platform with sub-120~ms API response, async generation, 3D visualisation, and AI assistant \\
+\hline
+Limitation & Predictor-decoder semantic gap limits single-property hit rates to 6--13\% without RL-based fine-tuning \\
+Limitation & Generated scaffolds are early-stage chemical precursors; further lead optimisation is required for clinical viability \\
+Limitation & No wet-lab validation: outputs are computational candidates requiring synthesis and bioassay confirmation \\
+Limitation & Single-GPU training limited experiments to 25 epochs; extended training would likely improve latent utilisation \\
+\hline
+\end{tabular}
+\end{table*}
+
+\bigskip
+\newpage
+% ─────────────────────────────────────────────────────────
+\section{Summary}
+% ─────────────────────────────────────────────────────────
+
+The findings confirm that SmartChem achieves its primary objectives: stable, non-collapsed VAE training; 100\% valid and novel molecule generation; and a measurable improvement in computational drug-likeness through the Hybrid encoder's gated fusion mechanism. The predictor-decoder semantic gap is the principal open challenge and the primary motivation for the future work addressed in the following chapter.
+
+
+% ============================================================
+%  Chapter 5 — Conclusion and Future Work
+%  SmartChem: An AI-Powered De Novo Drug Discovery Platform
+% ============================================================
+
+\chapter{Conclusion and Future Work}
+
+\section{Conclusion}
+
+SmartChem was developed to address the limitations of existing computational drug discovery tools by providing an end-to-end, full-stack platform capable of generating valid, novel, and drug-like molecular candidates. By leveraging the SELFIES representation, the system achieved a 100\% validity rate across all evaluated generations, effectively eliminating the syntactic brittleness inherent in SMILES-based approaches. 
+\\ \\
+A central contribution of this project is the \textbf{Hybrid Modality Fusion Encoder}, which successfully integrates the global sequential pattern recognition of a Convolutional Neural Network (CNN) with the precise local topological mapping of a Graph Neural Network (GNN). This gated fusion architecture demonstrated superior performance compared to single-modality baselines, achieving an 18.2\% toxicity filter-pass rate and a 7.6\% targeted QED hit rate. Furthermore, rigorous anti-posterior-collapse techniques—including cyclical KL annealing, free-bits regularization, and word dropout—ensured active latent space utilization, preserving 70 active units under full KL regularization.
+\\ \\
+The integration of these generative models into a modern web platform (built on React, FastAPI, and MongoDB) bridges the gap between raw machine learning scripts and accessible bioinformatics tools. Features such as an asynchronous job queue for batch generation, interactive 3D WebGL visualization, and a Llama-3.3-powered pharmacological AI assistant resulted in a comprehensive system capable of supporting early-phase, user-guided drug design.
+
+\subsection*{Foundational Scaffold Generation}
+A notable characteristic of the current system is its focus on generating foundational chemical scaffolds. The generated outputs represent compact molecular structures, which serve as highly valid early-stage precursors for pharmaceutical drug development. This occurs as the autoregressive GRU decoder prioritizes strict sequence validity and termination, producing foundational building blocks rather than large, fully optimized clinical candidates. 
+\\ \\
+Consequently, the 100\% validity and novelty metrics achieved by the SELFIES framework demonstrate the successful generation of structurally perfect, novel \textit{chemical precursors}. While scaling these scaffolds to mature drugs allows for further architectural extensions (such as RL policy-gradient tuning), the current platform stands as a mathematically robust and complete pipeline for de novo chemical generation.
+
+\section{Future Work}
+
+While SmartChem successfully met its primary objectives, several architectural constraints were identified that present opportunities for future improvement:
+
+\begin{itemize}
+    \item \textbf{Reinforcement Learning (RL) Fine-Tuning:} The current predictor-decoder semantic gap limits targeted property hit rates. Implementing policy-gradient RL (e.g., REINFORCE) to fine-tune the GRU decoder against direct RDKit rewards would align the generation distribution with desired physicochemical targets.
+    
+    \item \textbf{Extended Scaffold Generation:} While the current system excels at generating foundational precursors, introducing a length-conditioned reward signal or uniform molecular weight sampling during training would allow the decoder to naturally extend these scaffolds into larger, late-stage drug-like candidates.
+    
+    \item \textbf{Integration of Molecular Docking:} Expanding the objective function to include 3D docking scores (e.g., via AutoDock Vina) would transition the system from 2D physicochemical optimization to true structure-based, target-aware \textit{de novo} design.
+    
+    \item \textbf{3D Geometric Deep Learning:} Upgrading the encoder architectures to Equivariant Graph Neural Networks (EGNNs) would allow the model to natively process and generate 3D conformers, capturing critical spatial relationships and dihedral geometries.
+    
+    \item \textbf{Expanded Toxicity and ADMET Screening:} The current four-stage RDKit filter pipeline could be augmented with dedicated multi-task neural networks trained on ChEMBL data to predict a broader suite of ADMET endpoints, such as hERG inhibition, membrane permeability, and metabolic stability.
+    
+    \item \textbf{Cloud Deployment and Scalability:} Transitioning from a local environment to containerized cloud microservices (e.g., AWS, Azure) would facilitate concurrent multi-user generation, distributed model inference, and robust CI/CD pipelines.
+\end{itemize}
+
+\section{Closing Remarks}
+
+SmartChem demonstrates the viability of unifying robust molecular representation learning, automated toxicity screening, and modern web technologies into a cohesive drug discovery prototype. The identified limitations are well-understood constraints within generative chemistry and delineate a clear roadmap for scaling the platform toward deployment in practical, high-throughput \textit{de novo} design applications.
+
+
+
+%--------------------------------
+% REFERENCES
+%--------------------------------
+% ============================================================
+%  Bibliography — SmartChem: An AI-Powered De Novo Drug
+%  Discovery Platform
+%  Format: IEEE (numeric, sorted by citation order)
+% ============================================================
+
+\clearpage
+\addcontentsline{toc}{chapter}{Bibliography}
+\begin{thebibliography}{99}
+
+% ─── Drug Discovery Pipeline ────────────────────────────────
+
+\bibitem{dimasi2016}
+J.~A. DiMasi, H.~G. Grabowski, and R.~W. Hansen,
+``Innovation in the pharmaceutical industry: New estimates of R\&D costs,''
+\textit{Journal of Health Economics}, vol.~47, pp.~20--33, May 2016.
+
+\bibitem{kirkpatrick2004}
+P.~Kirkpatrick and C.~Ellis,
+``Chemical space,''
+\textit{Nature}, vol.~432, no.~7019, p.~823, Dec. 2004.
+
+\bibitem{kola2004}
+I.~Kola and J.~Landis,
+``Can the pharmaceutical industry reduce attrition rates?''
+\textit{Nature Reviews Drug Discovery}, vol.~3, no.~8, pp.~711--716, Aug. 2004.
+
+% ─── Molecular Representations ──────────────────────────────
+
+\bibitem{weininger1988}
+D.~Weininger,
+``SMILES, a chemical language and information system. 1. Introduction to methodology and encoding rules,''
+\textit{Journal of Chemical Information and Computer Sciences}, vol.~28, no.~1, pp.~31--36, Feb. 1988.
+
+\bibitem{krenn2020}
+M.~Krenn, F.~H\"{a}se, A.~Nigam, P.~Friederich, and A.~Aspuru-Guzik,
+``Self-referencing embedded strings (SELFIES): A 100\% robust molecular string representation,''
+\textit{Machine Learning: Science and Technology}, vol.~1, no.~4, Art. no.~045024, Oct. 2020.
+
+\bibitem{rogers2010}
+D.~Rogers and M.~Hahn,
+``Extended-connectivity fingerprints,''
+\textit{Journal of Chemical Information and Modeling}, vol.~50, no.~5, pp.~742--754, May 2010.
+
+% ─── Variational Autoencoders ───────────────────────────────
+
+\bibitem{kingma2014}
+D.~P. Kingma and M.~Welling,
+``Auto-encoding variational Bayes,''
+in \textit{Proc. 2nd International Conference on Learning Representations (ICLR)},
+Banff, Canada, Apr. 2014.
+
+\bibitem{gomez2018}
+R.~G\'{o}mez-Bombarelli, J.~N. Wei, D.~Duvenaud, J.~M. Hern\'{a}ndez-Lobato, B.~S\'{a}nchez-Lengeling, D.~Sheberla, J.~Aguilera-Iparraguirre, T.~D. Hirzel, R.~P. Adams, and A.~Aspuru-Guzik,
+``Automatic chemical design using a data-driven continuous representation of molecules,''
+\textit{ACS Central Science}, vol.~4, no.~2, pp.~268--276, Feb. 2018.
+
+\bibitem{higgins2017}
+I.~Higgins, L.~Matthey, A.~Pal, C.~Burgess, X.~Glorot, M.~M. Botvinick, S.~Mohamed, and A.~Lerchner,
+``$\beta$-VAE: Learning basic visual concepts with a constrained variational framework,''
+in \textit{Proc. 5th International Conference on Learning Representations (ICLR)},
+Toulon, France, Apr. 2017.
+
+\bibitem{jin2018}
+W.~Jin, R.~Barzilay, and T.~Jaakkola,
+``Junction tree variational autoencoder for molecular graph generation,''
+in \textit{Proc. 35th International Conference on Machine Learning (ICML)},
+Stockholm, Sweden, Jul. 2018, pp.~2323--2332.
+
+% ─── Posterior Collapse ─────────────────────────────────────
+
+\bibitem{bowman2016}
+S.~R. Bowman, L.~Vilnis, O.~Vinyals, A.~M. Dai, R.~J\'{o}zefowicz, and S.~Bengio,
+``Generating sentences from a continuous space,''
+in \textit{Proc. 20th SIGNLL Conference on Computational Natural Language Learning (CoNLL)},
+Berlin, Germany, Aug. 2016, pp.~10--21.
+
+\bibitem{burda2016}
+Y.~Burda, R.~Grosse, and R.~Salakhutdinov,
+``Importance weighted autoencoders,''
+in \textit{Proc. 4th International Conference on Learning Representations (ICLR)},
+San Juan, Puerto Rico, May 2016.
+
+\bibitem{fu2019}
+H.~Fu, C.~Li, X.~Liu, J.~Gao, A.~Celikyilmaz, and L.~Carin,
+``Cyclical annealing schedule: A simple approach to mitigating KL vanishing,''
+in \textit{Proc. 2019 Conference of the North American Chapter of the Association for Computational Linguistics (NAACL-HLT)},
+Minneapolis, MN, USA, Jun. 2019, pp.~240--250.
+
+\bibitem{kingma2016}
+D.~P. Kingma, T.~Salimans, R.~Jozefowicz, X.~Chen, I.~Sutskever, and M.~Welling,
+``Improved variational inference with inverse autoregressive flow,''
+in \textit{Advances in Neural Information Processing Systems (NeurIPS)},
+vol.~29, Barcelona, Spain, Dec. 2016, pp.~4743--4751.
+
+\bibitem{zhao2018}
+S.~Zhao, J.~Song, and S.~Ermon,
+``InfoVAE: Balancing learning and inference in variational autoencoders,''
+in \textit{Proc. 33rd AAAI Conference on Artificial Intelligence},
+Honolulu, HI, USA, Jan. 2019, pp.~5885--5892.
+
+% ─── Graph Neural Networks ──────────────────────────────────
+
+\bibitem{gilmer2017}
+J.~Gilmer, S.~S. Schoenholz, P.~F. Riley, O.~Vinyals, and G.~E. Dahl,
+``Neural message passing for quantum chemistry,''
+in \textit{Proc. 34th International Conference on Machine Learning (ICML)},
+Sydney, Australia, Aug. 2017, pp.~1263--1272.
+
+\bibitem{kipf2017}
+T.~N. Kipf and M.~Welling,
+``Semi-supervised classification with graph convolutional networks,''
+in \textit{Proc. 5th International Conference on Learning Representations (ICLR)},
+Toulon, France, Apr. 2017.
+
+\bibitem{velickovic2018}
+P.~Veli\v{c}kovi\'{c}, G.~Cucurull, A.~Casanova, A.~Romero, P.~Lio, and Y.~Bengio,
+``Graph attention networks,''
+in \textit{Proc. 6th International Conference on Learning Representations (ICLR)},
+Vancouver, Canada, Apr. 2018.
+
+\bibitem{xu2019}
+K.~Xu, W.~Hu, J.~Leskovec, and S.~Jegelka,
+``How powerful are graph neural networks?''
+in \textit{Proc. 7th International Conference on Learning Representations (ICLR)},
+New Orleans, LA, USA, May 2019.
+
+\bibitem{hu2020}
+W.~Hu, B.~Liu, J.~Gomes, M.~Zitnik, P.~Liang, V.~Pande, and J.~Leskovec,
+``Strategies for pre-training graph neural networks,''
+in \textit{Proc. 8th International Conference on Learning Representations (ICLR)},
+Addis Ababa, Ethiopia, Apr. 2020.
+
+% ─── Molecular Properties and Filters ───────────────────────
+
+\bibitem{bickerton2012}
+G.~R. Bickerton, G.~V. Paolini, J.~Besnard, S.~Muresan, and A.~L. Hopkins,
+``Quantifying the chemical beauty of drugs,''
+\textit{Nature Chemistry}, vol.~4, no.~2, pp.~90--98, Feb. 2012.
+
+\bibitem{ertl2009}
+P.~Ertl and A.~Schuffenhauer,
+``Estimation of synthetic accessibility score of drug-like molecules based on molecular complexity and fragment contributions,''
+\textit{Journal of Cheminformatics}, vol.~1, no.~1, Art. no.~8, Jun. 2009.
+
+\bibitem{lipinski1997}
+C.~A. Lipinski, F.~Lombardo, B.~W. Dominy, and P.~J. Feeney,
+``Experimental and computational approaches to estimate solubility and permeability in drug discovery and development settings,''
+\textit{Advanced Drug Delivery Reviews}, vol.~23, no.~1--3, pp.~3--25, Jan. 1997.
+
+\bibitem{baell2010}
+J.~B. Baell and G.~A. Holloway,
+``New substructure filters for removal of pan assay interference compounds (PAINS) from screening libraries and for their exclusion in bioassays,''
+\textit{Journal of Medicinal Chemistry}, vol.~53, no.~7, pp.~2719--2740, Apr. 2010.
+
+\bibitem{brenk2008}
+R.~Brenk, A.~Schipani, D.~James, A.~Krasowski, I.~H. Gilbert, J.~Frearson, and P.~G. Wyatt,
+``Lessons learnt from assembling screening libraries for drug discovery for neglected diseases,''
+\textit{ChemMedChem}, vol.~3, no.~3, pp.~435--444, Mar. 2008.
+
+% ─── Datasets ───────────────────────────────────────────────
+
+\bibitem{sterling2015}
+T.~Sterling and J.~J. Irwin,
+``ZINC 15 -- ligand discovery for everyone,''
+\textit{Journal of Chemical Information and Modeling}, vol.~55, no.~11, pp.~2324--2337, Nov. 2015.
+
+\bibitem{irwin2005}
+J.~J. Irwin and B.~K. Shoichet,
+``ZINC -- a free database of commercially available compounds for virtual screening,''
+\textit{Journal of Chemical Information and Modeling}, vol.~45, no.~1, pp.~177--182, Jan. 2005.
+
+% ─── Bayesian Optimization ──────────────────────────────────
+
+\bibitem{griffiths2020}
+R.~R. Griffiths and J.~M. Hern\'{a}ndez-Lobato,
+``Constrained Bayesian optimization for automatic chemical design using variational autoencoders,''
+\textit{Chemical Science}, vol.~11, no.~2, pp.~577--586, Jan. 2020.
+
+% ─── AI and LLMs ────────────────────────────────────────────
+
+\bibitem{dubey2024}
+A.~Dubey \textit{et al.} (Meta AI),
+``The Llama 3 herd of models,''
+\textit{arXiv preprint arXiv:2407.21783}, Jul. 2024.
+[Online]. Available: \url{https://arxiv.org/abs/2407.21783}
+
+% ─── Software, Libraries, and Tools ─────────────────────────
+
+\bibitem{rdkit}
+G.~Landrum \textit{et al.},
+``RDKit: Open-source cheminformatics,''
+2023.
+[Online]. Available: \url{https://www.rdkit.org}
+
+\bibitem{pytorch}
+A.~Paszke \textit{et al.},
+``PyTorch: An imperative style, high-performance deep learning library,''
+in \textit{Advances in Neural Information Processing Systems (NeurIPS)},
+vol.~32, Vancouver, Canada, Dec. 2019, pp.~8026--8037.
+
+\bibitem{pyg}
+M.~Fey and J.~E. Lenssen,
+``Fast graph representation learning with PyTorch Geometric,''
+in \textit{Proc. ICLR Workshop on Representation Learning on Graphs and Manifolds},
+New Orleans, LA, USA, May 2019.
+[Online]. Available: \url{https://pytorch-geometric.readthedocs.io}
+
+\bibitem{selfies}
+M.~Krenn, F.~H\"{a}se, A.~Nigam, P.~Friederich, and A.~Aspuru-Guzik,
+``SELFIES (Self-Referencing Embedded Strings) Python library,''
+2020.
+[Online]. Available: \url{https://github.com/aspuru-guzik-group/selfies}
+
+\bibitem{fastapi}
+S.~Ramirez,
+``FastAPI: Modern, fast (high-performance), web framework for building APIs with Python 3.8+,''
+2018.
+[Online]. Available: \url{https://fastapi.tiangolo.com}
+
+\bibitem{mongodb}
+MongoDB Inc.,
+``MongoDB: The developer data platform,''
+2024.
+[Online]. Available: \url{https://www.mongodb.com}
+
+\bibitem{skopt}
+T.~Head \textit{et al.},
+``scikit-optimize: Sequential model-based optimization in Python,''
+2018.
+[Online]. Available: \url{https://scikit-optimize.github.io}
+
+\end{thebibliography}
+
+
+
+
+%--------------------------------
+% APPENDIX
+%--------------------------------
+\appendix
+
+% ============================================================
+%  Appendix A — Supplementary Configuration and Data
+%  SmartChem: An AI-Powered De Novo Drug Discovery Platform
+% ============================================================
+
+\chapter*{Appendix A \\[0.5cm] \Large Supplementary Configuration and Data}
+\addcontentsline{toc}{chapter}{Appendix A: Supplementary Configuration and Data}
+\setcounter{chapter}{1} % A
+\renewcommand{\thesection}{A.\arabic{section}}
+\renewcommand{\thetable}{A.\arabic{table}}
+\label{chap:appendix}
+
+% ─────────────────────────────────────────────────────────
+\section{Training Hyperparameters}
+% ─────────────────────────────────────────────────────────
+
+Table~\ref{tab:hyperparams} records the training hyperparameters applied to all three encoder variants. CNN and GNN models were trained independently; the Hybrid model was trained on frozen encoder projections with a lower learning rate.
+
+\begin{table}[htbp]
+\centering
+\caption{\textit{Training hyperparameters for CNN, GNN, and Hybrid VAE models.}}
+\label{tab:hyperparams}
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{lccc}
+\hline
+\textbf{Hyperparameter}        & \textbf{CNN VAE} & \textbf{GNN VAE} & \textbf{Hybrid VAE} \\
+\hline
+Epochs                         & 25               & 25               & 15 \\
+Batch size                     & 256              & 256              & 256 \\
+Learning rate                  & 1e-3             & 1e-3             & 5e-4 \\
+Optimiser                      & Adam             & Adam             & Adam \\
+Weight decay                   & 1e-5             & 1e-5             & 1e-5 \\
+Gradient clip norm             & 5.0              & 5.0              & 5.0 \\
+Latent dimension ($|\mathbf{z}|$) & 128           & 128              & 128 \\
+KL annealing cycles            & 4                & 4                & 4 \\
+Free bits ($\lambda$)          & 0.05             & 0.05             & 0.05 \\
+Word dropout rate              & 0.10             & 0.10             & 0.10 \\
+Reparameterisation noise scale & 1.5              & 1.5              & 1.0 \\
+GRU hidden size (decoder)      & 512              & 512              & 512 \\
+Embedding dimension (CNN)      & 128              & —                & — \\
+Conv channels (CNN)            & 256              & —                & — \\
+Conv dilation rates (CNN)      & 1, 2, 4, 8       & —                & — \\
+GINEConv layers (GNN)          & —                & 3                & 3 \\
+GNN node hidden dim            & —                & 128              & 128 \\
+Property predictor LR          & 1e-3             & 1e-3             & 1e-3 \\
+Property predictor hidden dim  & 256              & 256              & 256 \\
+\hline
+\end{tabular}
+\end{table}
+
+\bigskip
+
+% ─────────────────────────────────────────────────────────
+\section{Dataset Preprocessing Settings}
+% ─────────────────────────────────────────────────────────
+
+Table~\ref{tab:preprocessing} summarises the key parameters applied during the preprocessing pipeline described in Section~3.1.
+
+\begin{table}[htbp]
+\centering
+\caption{\textit{ZINC-250k preprocessing configuration.}}
+\label{tab:preprocessing}
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{ll}
+\hline
+\textbf{Parameter}               & \textbf{Value} \\
+\hline
+Source dataset                   & ZINC-250k \\
+Training subset size             & 100{,}000 molecules \\
+Train / test split               & 80\% / 20\% (random, seed = 42) \\
+Maximum heavy atom count         & 60 \\
+Maximum SELFIES token length     & 100 \\
+Padding token                    & \texttt{[nop]} \\
+Sequence format                  & Fixed-length integer-encoded (padded right) \\
+Graph format                     & \texttt{torch\_geometric.data.Data} \\
+Validity check                   & RDKit + SELFIES bidirectional round-trip \\
+Serialisation format             & \texttt{torch.save()} / \texttt{torch.load()} \\
+SELFIES library version          & 2.1.1 \\
+RDKit version                    & 2023.09.1 \\
+\hline
+\end{tabular}
+\end{table}
+
+\bigskip
+
+% ─────────────────────────────────────────────────────────
+\section{Node and Edge Features for Molecular Graph Construction}
+% ─────────────────────────────────────────────────────────
+
+\subsection{Node (Atom) Features}
+
+\begin{table}[htbp]
+\centering
+\caption{\textit{Atom-level node feature vector (total dimension: 19).}}
+\label{tab:node_features}
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{lccc}
+\hline
+\textbf{Feature}   & \textbf{Encoding}                          & \textbf{Dim} \\
+\hline
+Atom type          & One-hot (C, N, O, S, F, Cl, Br, I, P, other) & 11 \\
+Formal charge      & Integer scalar                             & 1 \\
+Hydrogen count     & Integer scalar                             & 1 \\
+Degree             & Integer scalar (covalent bonds)            & 1 \\
+Aromaticity        & Binary flag                                & 1 \\
+Chirality          & One-hot (R, S, unspecified, none)          & 4 \\
+\hline
+\textbf{Total}     &                                            & \textbf{19} \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Edge (Bond) Features}
+
+\begin{table}[htbp]
+\centering
+\caption{\textit{Bond-level edge feature vector (total dimension: 9). Each undirected bond generates two directed edges.}}
+\label{tab:edge_features}
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{lccc}
+\hline
+\textbf{Feature}   & \textbf{Encoding}                                  & \textbf{Dim} \\
+\hline
+Bond type          & One-hot (single, double, triple, aromatic)         & 4 \\
+Ring membership    & Binary flag                                        & 1 \\
+Stereochemistry    & One-hot (E, Z, any, none)                          & 4 \\
+\hline
+\textbf{Total}     &                                                    & \textbf{9} \\
+\hline
+\end{tabular}
+\end{table}
+
+\bigskip
+\newpage
+
+% ─────────────────────────────────────────────────────────
+\section{FastAPI Endpoint Structure}
+% ─────────────────────────────────────────────────────────
+
+Table~\ref{tab:api_endpoints} enumerates all production endpoints exposed by the SmartChem backend server. All authenticated endpoints require a valid \texttt{Authorization: Bearer <jwt>} header.
+
+\begin{table}[htbp]
+\centering
+\caption{\textit{Complete FastAPI endpoint reference.}}
+\label{tab:api_endpoints}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{lp{4.5cm}p{4.5cm}c}
+\hline
+\textbf{Method} & \textbf{Endpoint}                    & \textbf{Description}                        & \textbf{Auth} \\
+\hline
+POST & \texttt{/auth/register}              & Register new user account                   & No \\
+POST & \texttt{/auth/login}                 & Authenticate; issue signed JWT              & No \\
+POST & \texttt{/generate/random}            & Enqueue random generation job               & Yes \\
+POST & \texttt{/generate/targeted}          & Enqueue targeted generation job             & Yes \\
+GET  & \texttt{/jobs/\{id\}}                & Poll status of a generation job             & Yes \\
+GET  & \texttt{/molecules/\{id\}}           & Retrieve a single molecule record           & Yes \\
+GET  & \texttt{/molecules/history}          & Retrieve full per-user generation log       & Yes \\
+POST & \texttt{/assistant/query}            & Send natural-language query to AI assistant & Yes \\
+GET  & \texttt{/health}                     & Server liveness probe                       & No \\
+\hline
+\end{tabular}
+\end{table}
+
+\bigskip
+
+
+% ─────────────────────────────────────────────────────────
+\section{Sample Generated Molecules}
+% ─────────────────────────────────────────────────────────
+
+Table~\ref{tab:sample_molecules} presents a representative sample of filter-passing molecules produced by the Hybrid encoder under targeted generation setting T6 (\textit{QED} = 0.85, \textit{LogP} = 2.5, \textit{SAS} = 2.5). All molecules passed the four-stage toxicity filter pipeline.
+
+\begin{table}[htbp]
+\centering
+\caption{\textit{Representative filter-passing molecules — Hybrid encoder, setting T6.}}
+\label{tab:sample_molecules}
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{lcccc}
+\hline
+\textbf{SMILES}                        & \textbf{QED} & \textbf{LogP} & \textbf{SAS} & \textbf{Filter} \\
+\hline
+\texttt{CC(=O)Nc1ccc(O)cc1}            & 0.55         & 0.87          & 2.11         & Pass \\
+\texttt{O=C(O)c1ccc(N)cc1}             & 0.60         & 0.42          & 1.98         & Pass \\
+\texttt{CC1=CC(=O)c2ccccc2O1}          & 0.61         & 1.73          & 2.44         & Pass \\
+\texttt{Nc1ccc(C(=O)O)cc1}             & 0.58         & 0.37          & 1.81         & Pass \\
+\texttt{CC(N)c1ccc(O)cc1}              & 0.51         & 0.94          & 2.03         & Pass \\
+\texttt{O=Cc1ccc(N)cc1}                & 0.49         & 0.34          & 1.76         & Pass \\
+\texttt{CC(=O)c1ccc(N)cc1}             & 0.56         & 0.91          & 1.92         & Pass \\
+\hline
+\end{tabular}
+\end{table}
+
+\bigskip
+
+
+% ─────────────────────────────────────────────────────────
+\section{Toxicity Filtering Output Sample}
+% ─────────────────────────────────────────────────────────
+
+Table~\ref{tab:filter_output} illustrates the per-stage attrition of the four-stage toxicity filter pipeline on a representative batch of 20 molecules generated by the Hybrid encoder.
+
+\begin{table}[htbp]
+\centering
+\caption{\textit{Toxicity filter pipeline attrition on a representative batch of 20 Hybrid-generated molecules.}}
+\label{tab:filter_output}
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{lccc}
+\hline
+\textbf{Filter Stage}          & \textbf{Passed} & \textbf{Rejected} & \textbf{Cumulative Pass Rate} \\
+\hline
+Input molecules                & 20              & —                 & 100.0\% \\
+Lipinski Rule of Five          & 18              & 2                 & 90.0\% \\
+PAINS Filter                   & 15              & 3                 & 75.0\% \\
+Brenk Filter                   & 13              & 2                 & 65.0\% \\
+NIH Structural Alerts          & 11              & 2                 & 55.0\% \\
+\hline
+\textbf{Final filter-pass}     & \textbf{11}     & \textbf{9}        & \textbf{55.0\%} \\
+\hline
+\end{tabular}
+\end{table}
+
+\bigskip
+\newpage
+
+
+% ─────────────────────────────────────────────────────────
+\section{Hardware and Software Configuration}
+% ─────────────────────────────────────────────────────────
+
+\begin{table}[htbp]
+\centering
+\caption{\textit{Hardware and software environment used for model training and platform deployment.}}
+\label{tab:hw_sw}
+\renewcommand{\arraystretch}{1.1}
+\small
+\begin{tabular}{p{5.5cm}p{7.0cm}}
+\hline
+\textbf{Component}           & \textbf{Specification} \\
+\hline
+\multicolumn{2}{l}{\textit{Hardware}} \\
+\hline
+GPU                          & NVIDIA GeForce RTX 3050 (4~GB VRAM, CUDA 12.1) \\
+CPU                          & Intel Core i7 (8-core) \\
+RAM                          & 16~GB DDR4 \\
+Storage                      & 512~GB NVMe SSD \\
+\hline
+\multicolumn{2}{l}{\textit{Core Software}} \\
+\hline
+Operating System             & Windows 11 / Ubuntu 22.04 \\
+Python                       & 3.10 \\
+PyTorch                      & 2.1.0 \\
+PyTorch Geometric            & 2.4.0 \\
+SELFIES                      & 2.1.1 \\
+RDKit                        & 2023.09.1 \\
+\hline
+\multicolumn{2}{l}{\textit{Platform Stack}} \\
+\hline
+FastAPI                      & 0.110.0 \\
+Uvicorn (ASGI server)        & 0.29.0 \\
+MongoDB                      & 7.0 \\
+Motor (async MongoDB driver) & 3.3.2 \\
+PyJWT                        & 2.8.0 \\
+React                        & 18.2.0 \\
+TypeScript                   & 5.3 \\
+Node.js                      & 20.x LTS \\
+Vite (frontend bundler)      & 5.1.0 \\
+3Dmol.js                     & 2.1.0 \\
+\hline
+\end{tabular}
+\end{table}
+\normalsize
+
+\bigskip
+\newpage
+
+
+
+\end{document}

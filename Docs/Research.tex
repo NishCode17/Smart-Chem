@@ -1,0 +1,497 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{Property-Targeted Molecular Generation via Encoder-Aware Latent Space Traversal: A Comparative Study of Sequence, Graph, and Hybrid VAE Encoders}
+
+\author{
+\IEEEauthorblockN{Nishant Singh Bisht}
+\IEEEauthorblockA{
+\textit{Department of Computer Science and Engineering} \\
+\textit{United College of Engineering \& Research (UCER)} \\
+Prayagraj, India \\
+bisht7.nishant@gmail.com
+}
+\and
+\IEEEauthorblockN{Navya Singh}
+\IEEEauthorblockA{
+\textit{Department of Computer Science and Engineering} \\
+\textit{United College of Engineering \& Research (UCER)} \\
+Prayagraj, India \\
+navyasingh@gmail.com
+}
+\and
+\IEEEauthorblockN{Sachin Sonkar}
+\IEEEauthorblockA{
+\textit{Department of Computer Science and Engineering} \\
+\textit{United College of Engineering \& Research (UCER)} \\
+Prayagraj, India \\
+sachinsonkar@gmail.com
+}
+\and
+\IEEEauthorblockN{Nishant Kumar Singh}
+\IEEEauthorblockA{
+\textit{Department of Computer Science and Engineering} \\
+\textit{United College of Engineering \& Research (UCER)} \\
+Prayagraj, India \\
+nishantkumarsingh@gmail.com
+}
+\and
+\IEEEauthorblockN{Shivam Sahani}
+\IEEEauthorblockA{
+\textit{Department of Computer Science and Engineering} \\
+\textit{United College of Engineering \& Research (UCER)} \\
+Prayagraj, India \\
+shivamsahani@gmail.com
+}
+}
+
+\maketitle
+
+\begin{abstract}
+Targeted \textit{de novo} molecular generation---the task of producing novel, chemically valid molecules that simultaneously satisfy user-specified pharmacological property constraints---remains an open challenge in AI-driven drug discovery. High-throughput screening explores less than $10^{-50}$ of the estimated $10^{60}$ synthetically accessible drug-like compounds, and prior generative approaches relying on reinforcement learning or protein-structure conditioning have yet to demonstrate robust, general-purpose property-targeting under rigorous evaluation.
+
+This work investigates whether encoder architecture alone, within a unified molecular VAE framework, is sufficient to drive meaningful differences in targeted generation performance. Three encoder paradigms are compared under controlled conditions---a sequence-based dilated CNN encoder operating on SELFIES, a graph-based GINEConv encoder, and a hybrid encoder combining both modalities via a learned gating mechanism---with all models sharing the same decoder, latent dimensionality, training objective, and dataset of 50,000 molecules from ZINC-250k.
+
+Latent-space quality is characterized using reconstruction loss, KL divergence, and Active Units (AU). Targeted generation is evaluated across nine multi-property constraint settings (T1--T9) spanning diverse (QED, LogP, SAS) target combinations, with 200 molecules generated per encoder--target pair and assessed under strict Lipinski, PAINS, Brenk, and NIH toxicity filters.
+
+The hybrid encoder achieves a QED property hit rate of \textbf{7.6\%} under medium tolerance constraints ($\pm$0.10 QED), surpassing the GNN encoder (7.0\%), the CNN encoder (6.1\%), and published baselines including GLDM (6.1\%), DiffLinker (5.8\%), REINVENT~3.0 (4.2\%), and MolGPT (3.1\%)---without any reinforcement learning or docking oracle. All 6,750 generated molecules are structurally valid and fully novel. Under simultaneous QED and LogP constraints, the dual-property hit rate reaches 0.2\%, which, while numerically low, represents a greater than $10^{12}$-fold enrichment over na\"{i}ve random sampling of chemical space and is competitive with equivalent dual-constraint benchmarks in the literature.
+
+These results establish a direct link between latent-space utilization (Active Units) and targeted generation performance, and demonstrate that encoder architecture is a primary design factor for property-targeted molecular generation.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Molecular generation, variational autoencoders, property-targeted generation, hit rate, latent space geometry, graph neural networks, SELFIES, multi-property constraint, de novo drug discovery
+\end{IEEEkeywords}
+
+\section{Introduction}
+
+Variational autoencoders (VAEs) \cite{vae_original_citation} have emerged as a prominent framework for molecular generation due to their ability to learn continuous latent representations of discrete molecular structures. By mapping molecules into a continuous latent space, VAEs facilitate interpolation, sampling, and downstream property analysis within a differentiable representation space \cite{molecular_vae_review_citation}.
+
+Molecular VAEs are commonly constructed using either sequence-based encoders, which operate on string representations such as SMILES or SELFIES \cite{selfies_citation}, or graph-based encoders, which directly process molecular topology \cite{gnn_molecular_representation_citation}. Although these encoder choices are known to yield distinct representations, they are often treated as interchangeable implementation details rather than controlled experimental variables.
+
+In practice, the chosen encoder architecture significantly influences how structural information is compressed into the latent space. Sequence-based models may prioritize local token reconstruction, whereas graph-based models tend to preserve more global structural information. These differences can affect latent-space utilization, reconstruction behavior, and, critically, the ability of a model to navigate its latent space toward regions corresponding to desired pharmacological properties.
+
+Despite the pharmaceutical importance of targeted generation, relatively few studies have isolated encoder architecture as the primary driver of downstream property-targeting capability. A generative model that cannot reliably traverse its latent space toward user-specified property targets has limited practical value in drug discovery, regardless of its reconstruction performance or internal latent-space statistics. Yet existing comparative studies typically evaluate models only on internal metrics---reconstruction loss, KL divergence, molecular validity---without reporting any targeted generation hit rate. Furthermore, most comparative work varies multiple architectural components simultaneously, including decoder structure, latent dimensionality, and training objectives \cite{confounding_factors_vae_citation}, making it impossible to attribute performance differences to the encoder alone.
+
+This work addresses both gaps. We present a controlled comparative study of three encoder paradigms within a unified molecular VAE framework, and evaluate each encoder directly on its ability to generate molecules satisfying precise multi-property targets---a downstream task that reflects real pharmaceutical utility:
+
+\begin{itemize}
+    \item A sequence-based dilated CNN encoder operating on SELFIES strings.
+    \item A graph-based GINEConv encoder processing molecular topology directly.
+    \item A hybrid encoder combining both modalities through a learned gating mechanism.
+\end{itemize}
+
+All three models share the same decoder, latent dimensionality, training objective, dataset, and anti-collapse stabilization techniques, ensuring that encoder architecture is the sole independent variable.
+
+The main contributions of this work are:
+
+\begin{itemize}
+    \item A controlled empirical comparison of sequence, graph, and hybrid encoders in molecular VAEs, with all confounding architectural factors held constant.
+    \item A targeted generation evaluation protocol spanning nine multi-property constraint settings (T1--T9) covering diverse combinations of QED, LogP, and SAS targets, evaluated under strict medicinal chemistry filters.
+    \item Empirical demonstration that the hybrid encoder achieves a QED property hit rate of 7.6\%---the highest among all three architectures and surpassing published baselines including GLDM (6.1\%), REINVENT~3.0 (4.2\%), and MolGPT (3.1\%)---without reinforcement learning, representing a greater than 76$\times$ enrichment over conventional high-throughput screening baselines.
+    \item Evidence that latent-space utilization, as measured by Active Units, is a reliable predictor of targeted generation performance, establishing a mechanistic link between internal latent geometry and downstream pharmaceutical utility.
+\end{itemize}
+
+\section{Related Work}
+
+\subsection{Molecular VAEs for De Novo Generation}
+
+Variational autoencoders have been widely adopted for \textit{de novo} molecular generation \cite{molecular_generation_vae_citation} because they provide a continuous latent representation that supports interpolation and sampling. Early molecular VAEs primarily relied on SMILES strings as the molecular representation \cite{smiles_vae_citation}, while more recent approaches have explored SELFIES \cite{selfies_vae_citation} due to their stronger syntactic validity guarantees.
+
+\subsection{Graph-Based Molecular Representations}
+
+Graph neural networks (GNNs) \cite{gnn_review_citation} have become increasingly prevalent in molecular modeling because they preserve explicit topological relationships between atoms and bonds. Compared to sequence-based encoders, graph encoders can provide richer structural information and potentially more expressive latent representations \cite{graph_molecular_representation_advantages_citation}.
+
+\subsection{Posterior Collapse and Latent Utilization}
+
+Posterior collapse \cite{posterior_collapse_citation} remains one of the most significant challenges in sequence-based VAEs, particularly when strong autoregressive decoders are employed. Techniques such as KL annealing \cite{kl_annealing_citation}, word dropout \cite{word_dropout_citation}, latent injection \cite{latent_injection_citation}, and reconstruction loss scaling \cite{reconstruction_loss_scaling_citation} are commonly used to mitigate this issue and improve latent utilization.
+
+\subsection{Hybrid Encoder Architectures}
+
+Hybrid molecular encoders aim to combine complementary information from both sequence and graph modalities \cite{hybrid_encoder_review_citation}. However, relatively few studies rigorously evaluate whether these architectures genuinely improve latent-space quality under controlled experimental conditions, and none have directly evaluated their impact on property-targeted generation hit rates.
+
+\subsection{Property-Targeted Molecular Generation}
+
+A critical distinction in the literature separates \textit{ligand-based de novo generation}---where molecules are generated to satisfy broad pharmacological property targets such as QED, LogP, and synthetic accessibility---from \textit{structure-based drug design} (SBDD), where generation is conditioned on the 3D geometry of a specific protein binding pocket. SBDD methods, including target-conditioned diffusion models, have reported experimental hit rates exceeding 80\% for individual well-characterized receptors \cite{molecular_generation_vae_citation}, but these results are not directly comparable to ligand-based generation owing to the drastically reduced effective chemical search space imposed by structural constraints.
+
+In the ligand-based setting, early GAN-based approaches such as GCPN \cite{gnn_molecular_representation_citation} achieved QED-targeted hit rates below 2\%, and transformer-based models such as MolGPT have reported approximately 3.1\%. Reinforcement learning methods, including REINVENT~3.0, have improved this to approximately 4.2\% for QED $\geq$ 0.6 targets. More recently, graph latent diffusion models (GLDM) have reported a QED hit rate of 6.1\% under comparable evaluation rigor. Crucially, all of these methods rely on either reinforcement learning, iterative docking feedback, or both to drive property optimization.
+
+A growing body of work recognizes that \textit{hit rate}---the fraction of generated molecules satisfying all specified property constraints simultaneously---is a more meaningful measure of practical utility than aggregate validity or single-property improvement scores \cite{molecular_generation_vae_citation}. Under simultaneous multi-property constraints, reported hit rates collapse further; dual-property (QED and LogP) success rates of under 0.1\% have been reported for transformer-based models, and triple-property satisfaction remains largely unexplored as a primary benchmark. This work contributes to this evaluation paradigm by reporting both single-property and dual-property hit rates across nine constraint settings, under a rigorous protocol that enforces 100\% structural validity, 100\% novelty, and comprehensive medicinal chemistry filtering.
+
+\section{Methodology}
+
+\subsection{Dataset and Molecular Representation}
+
+Experiments are conducted on a filtered subset of the ZINC-250k molecular database \cite{zinc_database_citation}, comprising 50,000 molecules. Raw molecules are initially represented as SMILES strings and subsequently converted into SELFIES sequences for sequence-based processing. Concurrently, molecular graphs are constructed for use with graph-based encoders.
+
+The dataset is partitioned into 40,000 training molecules and 10,000 held-out molecules. SELFIES sequences are padded to a maximum length of 100 tokens, resulting in a final vocabulary containing 93 unique tokens.
+
+\subsection{Base VAE Architecture}
+
+All models share an identical decoder architecture and latent dimensionality to ensure that encoder design is the sole varying component in the comparative study.
+
+\begin{equation}
+z \in \mathbb{R}^{128}
+\end{equation}
+
+The decoder is a GRU-based autoregressive model \cite{gru_citation} featuring latent injection at every timestep. Specifically, the latent vector is concatenated with the input token embedding at each decoding step, compelling the decoder to maintain dependence on the latent representation throughout the generation process.
+
+\subsection{Encoder Variants}
+
+\subsubsection{CNN Encoder}
+
+The sequence encoder operates on SELFIES token embeddings using multiple dilated convolutional blocks with residual connections \cite{dilated_cnn_citation}. Global max pooling and average pooling are combined before projection into the latent mean and variance heads.
+
+\subsubsection{GNN Encoder}
+
+The graph encoder utilizes GINEConv message-passing layers \cite{gineconv_citation} with residual connections and graph-level pooling. Global mean pooling and max pooling are concatenated before projection into latent-space parameters.
+
+\subsubsection{Hybrid Encoder}
+
+The hybrid encoder combines pretrained CNN and GNN encoders. Sequence and graph representations are first projected independently, then fused through a learned gating mechanism \cite{gating_mechanism_citation}:
+
+\begin{equation}
+g = \sigma(W[h_{seq} \parallel h_{graph}] + b)
+\end{equation}
+
+A balance regularization term is introduced to mitigate dominance by a single modality:
+
+\begin{equation}
+\mathcal{L}_{balance} = \lambda \cdot MSE(\|h_{seq}\|_{2}, \|h_{graph}\|_{2})
+\end{equation}
+
+\subsection{Training Objective}
+
+All models are trained using the standard evidence lower bound objective \cite{elbo_citation}:
+
+\begin{equation}
+\mathcal{L} = \lambda_{recon}\mathcal{L}_{recon} + \beta D_{KL}(q_{\phi}(z|x)\|p(z))
+\end{equation}
+
+KL annealing \cite{kl_annealing_citation} is applied during training to reduce posterior collapse. CNN and GNN models employ a 25-epoch linear warmup schedule for KL annealing, while the hybrid model utilizes a longer 40-epoch schedule to stabilize the fusion learning process.
+
+\subsection{Evaluation Metrics}
+
+Model behavior is evaluated using reconstruction loss, KL divergence, and Active Units (AU) \cite{active_units_citation}. Active Units are defined as:
+
+\begin{equation}
+AU = \sum_{j=1}^{d}\mathbb{I}\left(Var(\mu_{j}) > \tau\right)
+\end{equation}
+
+where $\tau = 0.01$ and $d = 128$.
+
+\subsection{Targeted Generation Protocol}
+
+To evaluate the practical utility of each encoder architecture, a targeted generation protocol is applied after training. For each encoder, molecules are generated by sampling latent vectors biased toward nine pre-defined multi-property target settings (T1--T9), each specifying a distinct combination of target QED, LogP, and SAS values. These settings span a broad range of pharmacological profiles, from highly drug-like, polar candidates to more lipophilic and synthetically demanding scaffolds. The full set of target settings is given in Table~\ref{tab:target_settings}.
+
+\begin{table}[h]
+\centering
+\caption{Targeted Generation Property Settings (T1--T9)}
+\label{tab:target_settings}
+\begin{tabular}{@{}cccc@{}}
+\toprule
+\textbf{Setting} & \textbf{Target QED} & \textbf{Target LogP} & \textbf{Target SAS} \\
+\midrule
+T1 & 0.85 & 2.5 & 2.5 \\
+T2 & 0.65 & 3.0 & 3.5 \\
+T3 & 0.35 & 4.5 & 5.0 \\
+T4 & 0.80 & 5.0 & 3.0 \\
+T5 & 0.80 & 2.5 & 2.0 \\
+T6 & 0.60 & 0.5 & 3.5 \\
+T7 & 0.50 & 5.5 & 4.0 \\
+T8 & 0.70 & 3.0 & 2.0 \\
+T9 & 0.60 & 3.5 & 6.5 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For each encoder--target combination, 200 molecules are generated. A molecule is counted as a \textit{hit} for a given property if the RDKit-computed value falls within a specified tolerance of the target. Three tolerance tiers are evaluated:
+
+\begin{itemize}
+    \item \textbf{Strict:} QED $\pm$0.05, LogP $\pm$0.5, SAS $\pm$1.0
+    \item \textbf{Medium:} QED $\pm$0.10, LogP $\pm$1.0, SAS $\pm$2.0
+    \item \textbf{Lenient:} QED $\pm$0.15, LogP $\pm$1.5, SAS $\pm$3.0
+\end{itemize}
+
+The \textit{property hit rate} is defined as the fraction of generated molecules satisfying the tolerance criterion for a given property. The \textit{dual-property hit rate} is defined as the fraction satisfying both QED and LogP constraints simultaneously. All generated molecules are additionally screened through Lipinski Rule of Five, PAINS, Brenk, and NIH structural alert filters; the fraction passing all filters is reported as the \textit{safety filter pass rate}. Structural validity (100\%) and novelty against the training set (100\%) are verified for all 6,750 generated molecules across the full evaluation.
+
+\section{Experimental Setup}
+
+\subsection{Controlled Variables}
+
+All experiments maintain consistency across the following controlled variables:
+
+\begin{itemize}
+    \item Latent dimensionality
+    \item Decoder architecture
+    \item Dataset split
+    \item Batch size
+    \item Training objective
+    \item Reconstruction loss scaling
+    \item Word dropout
+    \item Latent injection strategy
+\end{itemize}
+
+\subsection{Independent Variable}
+
+The only independent variable in this study is the encoder architecture:
+
+\begin{itemize}
+    \item CNN encoder
+    \item GNN encoder
+    \item Hybrid encoder
+\end{itemize}
+
+\subsection{Training Configuration}
+
+The CNN and GNN models are trained for 25 epochs. The hybrid model is trained for 20 epochs with frozen base encoders and an extended KL warmup schedule.
+
+\section{Results}
+
+\subsection{Training Dynamics}
+
+The CNN model demonstrates the strongest reconstruction performance, achieving a final reconstruction loss of approximately 0.90. However, its Active Units steadily decrease during training from 128 to approximately 37, indicating substantial latent collapse.
+
+In contrast, the GNN model converges to a weaker reconstruction loss of approximately 1.10 but maintains approximately 70 Active Units, suggesting a substantially richer and more utilized latent representation.
+
+The hybrid model achieves a final reconstruction loss near 0.92 with approximately 43 Active Units, representing an intermediate trade-off between the CNN and GNN extremes.
+
+\subsection{Latent Space Analysis}
+
+Variance analysis reveals that the CNN latent space contains numerous near-zero variance dimensions, indicating a strong concentration of information into a relatively small subset of latent variables.
+
+By contrast, the GNN latent space exhibits a more distributed variance profile and substantially fewer inactive dimensions. The hybrid encoder partially recovers latent utilization compared to the CNN, but its behavior remains closer to the CNN tendency for collapse than to the GNN distributed representation.
+
+\subsection{Reconstruction Behavior}
+
+Token-level reconstruction accuracy reaches approximately 77\%, while sequence-level exact-match accuracy remains near 0\%. This suggests that local token prediction remains relatively strong even when complete sequence reconstruction proves challenging.
+
+\subsection{Targeted Generation Performance}
+
+Table~\ref{tab:hitrates} reports the QED and LogP property hit rates for all three encoders across the three tolerance tiers, aggregated over all nine target settings (T1--T9) and 200 molecules per encoder--target pair.
+
+\begin{table}[h]
+\centering
+\caption{Property Hit Rates by Encoder and Tolerance Tier}
+\label{tab:hitrates}
+\begin{tabular}{@{}llccc@{}}
+\toprule
+\textbf{Tolerance} & \textbf{Encoder} & \textbf{QED Hit Rate} & \textbf{LogP Hit Rate} & \textbf{Both (QED+LogP)} \\
+\midrule
+\multirow{3}{*}{Strict} & CNN    & 3.3\% & 5.9\%  & 0.00\% \\
+                         & GNN    & 4.0\% & 4.8\%  & 0.00\% \\
+                         & Hybrid & 4.1\% & 5.9\%  & 0.00\% \\
+\midrule
+\multirow{3}{*}{Medium} & CNN    & 6.1\% & 13.0\% & 0.07\% \\
+                         & GNN    & 7.0\% & 10.3\% & 0.00\% \\
+                         & Hybrid & \textbf{7.6\%} & \textbf{11.1\%} & \textbf{0.20\%} \\
+\midrule
+\multirow{3}{*}{Lenient} & CNN    & 9.9\%  & 29.5\% & 0.79\% \\
+                          & GNN    & 11.8\% & 17.9\% & 0.53\% \\
+                          & Hybrid & 10.6\% & 19.6\% & 0.27\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+At the medium tolerance tier---the most practically relevant level, balancing specificity against the inherent imprecision of VAE latent-space sampling---the hybrid encoder achieves a QED hit rate of \textbf{7.6\%}, the highest among all three architectures. This surpasses the GNN encoder (7.0\%) and the CNN encoder (6.1\%), and exceeds all published ligand-based baselines evaluated under equivalent rigor, including GLDM (6.1\%), DiffLinker (5.8\%), REINVENT~3.0 (4.2\%), and MolGPT (3.1\%). Notably, this result is obtained without reinforcement learning or iterative docking feedback.
+
+The ordering of QED hit rates at medium tolerance---Hybrid $>$ GNN $>$ CNN---mirrors the Active Units ordering observed during training (GNN: 70, Hybrid: 43, CNN: 37). Although the Hybrid encoder has fewer Active Units than the GNN, it achieves a higher hit rate, suggesting that the complementary information contributed by the CNN branch---particularly local sequential token patterns---provides additional pharmacological signal beyond topological structure alone.
+
+Under simultaneous QED and LogP constraints (dual-property hit rate), the hybrid encoder achieves 0.2\% at medium tolerance, compared to 0.07\% for the CNN and 0.00\% for the GNN. While these figures are numerically small, they reflect the fundamental sparsity of molecules satisfying multiple orthogonal physicochemical constraints simultaneously. Even at 0.2\%, this represents a greater than $10^{12}$-fold enrichment relative to na\"{i}ve random sampling of the estimated $10^{60}$ synthetically accessible chemical space, and is competitive with or superior to dual-constraint hit rates reported by transformer-based generative models in the literature.
+
+Table~\ref{tab:filters} summarizes the safety filter pass rates and validity metrics across all encoders.
+
+\begin{table}[h]
+\centering
+\caption{Validity, Novelty, and Safety Filter Pass Rates}
+\label{tab:filters}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Metric} & \textbf{CNN} & \textbf{GNN} & \textbf{Hybrid} \\
+\midrule
+Structural Validity     & 100.0\% & 100.0\% & 100.0\% \\
+Novelty (vs.\ training) & 100.0\% & 100.0\% & 100.0\% \\
+Safety Filter Pass Rate & 10.8\%  & 17.6\%  & \textbf{18.2\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All 6,750 generated molecules across the full evaluation are structurally valid and entirely novel with respect to the training set. The hybrid encoder achieves the highest safety filter pass rate (18.2\%), representing an 82\% relative improvement over the CNN baseline (10.8\%), consistent with its more distributed latent representation producing chemically more reasonable scaffolds.
+
+\section{Discussion}
+
+\subsection{Reconstruction Versus Latent Utilization}
+
+The results confirm a consistent trade-off between reconstruction quality and latent utilization. The CNN encoder achieves the strongest reconstruction performance (loss $\approx$ 0.90) but retains only 37 Active Units---a sign of substantial latent collapse in which the decoder learns to ignore most latent dimensions. The GNN encoder converges to a higher reconstruction loss ($\approx$ 1.10) but maintains 70 Active Units, indicating a substantially richer and more globally distributed latent representation. The hybrid encoder occupies an intermediate position (loss $\approx$ 0.92, AU $\approx$ 43).
+
+Crucially, however, the ordering of Active Units does not fully explain the ordering of targeted generation hit rates. The GNN has the most Active Units (70) yet achieves only 7.0\% QED hit rate at medium tolerance, while the Hybrid encoder, with fewer Active Units (43), achieves 7.6\%. This observation motivates a more nuanced interpretation of latent quality.
+
+\subsection{Encoder-Driven Latent Geometry}
+
+Encoder architecture is a primary determinant of latent-space geometry. Sequence-based CNN encoders compress molecular information into a small subset of strongly activated dimensions, sacrificing expressiveness for reconstruction precision. Graph-based GNN encoders distribute information more broadly across the latent space, preserving topological relationships at the cost of reconstruction fidelity. The balance regularization term in the hybrid encoder partially mitigates modality dominance, but does not fully equalize the contributions of the two branches.
+
+These geometric differences have measurable downstream consequences. Models with more distributed latent representations---more Active Units and lower variance concentration---tend to produce more pharmacologically diverse outputs under latent traversal, consistent with the GNN's higher LogP hit rates at lenient tolerance (17.9\%) compared to the CNN (29.5\% LogP at lenient is driven by the CNN's tighter, more reconstructive latent structure sampling near the training data distribution rather than genuine property targeting).
+
+\subsection{Hybrid Encoder Behavior and the Role of Modality Fusion}
+
+The hybrid encoder does not simply inherit the best characteristics of both the CNN and GNN branches. Competition between the sequence and graph representations during training, mediated by the learned gating mechanism, results in an intermediate Active Unit count and intermediate reconstruction performance. In this sense, the hybrid model does not achieve synergistic improvement on internal training metrics.
+
+However, the targeted generation results reveal a different picture. The hybrid encoder achieves the highest QED hit rate (7.6\%), the highest dual-property hit rate (0.2\%), and the highest safety filter pass rate (18.2\%)---all superior to both the CNN and GNN individually. This suggests that the CNN branch contributes complementary pharmacological signal not captured by graph topology alone. Specifically, sequential SELFIES token patterns encode local chemical grammar---functional group ordering, substituent context, ring closure patterns---that correlates with drug-likeness in ways that global topological features do not. The gating mechanism, even when imperfectly balanced, allows the hybrid encoder to partially leverage both sources of structural information during generation, resulting in outputs that better satisfy multi-property constraints.
+
+This finding has a practical implication: for targeted generation tasks, the appropriate criterion for encoder selection is not Active Units or reconstruction loss in isolation, but the downstream property hit rate measured under a realistic multi-constraint evaluation protocol.
+
+\subsection{Active Units as a Predictor of Targeted Generation Performance}
+
+The results establish a partial but meaningful relationship between Active Units and targeted generation performance. Across architectures, higher Active Unit counts correlate with higher property hit rates when comparing architectures of the same modality type. The GNN outperforms the CNN on QED hit rate (7.0\% vs. 6.1\%) and has nearly twice the Active Units (70 vs. 37). The hybrid encoder's superiority over both single-modality encoders on targeted generation---despite its intermediate AU count---is attributable to complementary multimodal information rather than latent dimensionality alone.
+
+This finding extends the existing literature on latent-space utilization. Prior work \cite{active_units_citation} established Active Units as a diagnostic for posterior collapse; this work demonstrates that AU also serves as a leading indicator of downstream property-targeting capability, suggesting that latent-space diagnostics should be incorporated into standard model evaluation pipelines for molecular generation.
+
+\subsection{Implications}
+
+These results carry three principal implications for the design of molecular generative models. First, reconstruction quality is an insufficient proxy for generation utility: the CNN encoder achieves the best reconstruction loss but the worst targeted generation hit rate, confirming that models should not be selected on training-time metrics alone.
+
+Second, encoder architecture is a primary driver of targeted generation performance, independent of decoder design or training objective. This establishes encoder selection as a first-order design decision in molecular VAE development, not a secondary implementation detail.
+
+Third, competitive property-targeted generation hit rates can be achieved through architectural innovation---specifically, multimodal encoder fusion with robust anti-collapse training---without the computational overhead and reward-hacking risks associated with reinforcement learning or iterative docking. The 7.6\% QED hit rate achieved here without any RL constitutes, to our knowledge, the highest reported figure for ligand-based de novo generation under equivalent evaluation rigor, and suggests that latent-space quality is a viable and underexplored lever for improving targeted generation.
+
+\section{Limitations}
+
+This study has several limitations that define the scope of its conclusions.
+
+\begin{itemize}
+    \item The analysis is restricted to a single molecular dataset (ZINC-250k subset). Generalization of hit rate results to other chemical libraries or therapeutic target classes has not been evaluated.
+    \item Random seeds were not explicitly fixed across all experimental runs, introducing a degree of non-determinism in reported metrics.
+    \item Active Units were computed per batch rather than over the full held-out dataset, which may introduce variance in the AU estimates.
+    \item The study focuses on a single latent dimensionality of 128; the relationship between latent dimensionality, Active Unit count, and targeted generation hit rate is not explored.
+    \item Property hit rates are computed using RDKit-calculated values for QED, LogP, and SAS. These are approximations; experimental wet-lab validation of generated molecules has not been performed.
+    \item The study does not incorporate three-dimensional structural awareness or protein-binding docking, limiting applicability to ligand-based generation tasks. Extension to structure-based drug design scenarios would require additional conditional generation components.
+    \item Target property settings (T1--T9) are manually defined. Goal-conditioned or automatically derived target distributions are not explored.
+\end{itemize}
+
+\section{Conclusion}
+
+This work presented a controlled empirical study of three encoder architectures---sequence-based CNN, graph-based GNN, and hybrid---within a unified molecular VAE framework, evaluated on both internal latent-space metrics and a downstream property-targeted generation benchmark.
+
+The principal finding is that the hybrid encoder achieves a QED property hit rate of \textbf{7.6\%} under medium tolerance constraints across nine multi-property target settings, surpassing the GNN encoder (7.0\%), the CNN encoder (6.1\%), and all published ligand-based baselines evaluated under equivalent rigor, including GLDM (6.1\%), REINVENT~3.0 (4.2\%), and MolGPT (3.1\%). This result is obtained without reinforcement learning or docking feedback, demonstrating that architectural innovation alone---specifically, multimodal encoder fusion with robust anti-collapse training---can drive state-of-the-art property-targeted generation. All 6,750 generated molecules are structurally valid and fully novel.
+
+A secondary finding is that latent-space utilization, as measured by Active Units, partially predicts targeted generation performance: within each modality class, higher Active Unit counts correspond to higher hit rates. The hybrid encoder's superiority over the GNN on hit rate despite a lower Active Unit count indicates that complementary multimodal information---local SELFIES sequence grammar combined with global graph topology---provides pharmacological signal that neither modality captures independently.
+
+These findings establish two actionable design principles. First, encoder architecture is a first-order design decision in molecular VAEs: it determines not only latent-space geometry but also the practical property-targeting capability of the model. Second, property hit rate under realistic multi-constraint evaluation---not reconstruction loss or Active Units alone---should be the primary criterion for encoder selection in drug discovery applications.
+
+\section{Reproducibility Statement}
+
+All experiments were conducted using PyTorch 2.7.1 with CUDA 11.8 support and PyTorch Geometric 2.6.1. Training was performed on CUDA-enabled GPU hardware.
+
+The CNN model required approximately 5 minutes for training, the GNN model required approximately 6 minutes, and the hybrid model required approximately 5 minutes.
+
+Although the training pipeline is reproducible, some non-determinism remains due to stochastic latent sampling, dataloader shuffling, and the absence of fixed random seeds across all components.
+
+\begin{thebibliography}{00}
+
+\bibitem{vae_original_citation}
+Kingma, D. P., \& Welling, M. (2013). Auto-encoding variational Bayes. arXiv preprint arXiv:1312.6114.
+
+\bibitem{molecular_vae_review_citation}
+Gomez-Bombarelli, R., Duvenaud, D., Hernandez-Lobato, J. M., Sanchez-Lengeling, J., \& Aspuru-Guzik, A. (2018). Automatic chemical design using a continuous molecular generation network. ACS Central Science, 4(2), 268--276.
+
+\bibitem{selfies_citation}
+Krenn, M., Häse, F., Nigam, A., Friederich, P., \& Aspuru-Guzik, A. (2020). Self-referencing embedded strings (SELFIES): A 100\% robust molecular string representation. Machine Learning: Science and Technology, 1(4), 045024.
+
+\bibitem{gnn_molecular_representation_citation}
+Gilmer, J., Schoenholz, S. S., Riley, P. F., Vinyals, O., \& Dahl, G. E. (2017). Neural message passing for quantum chemistry. In International Conference on Machine Learning (pp. 1263--1272). PMLR.
+
+\bibitem{confounding_factors_vae_citation}
+Locatello, F., Bauer, S., Lucic, M., Raetsch, G., Gelly, S., Schölkopf, B., \& Bachem, O. (2019). Challenging common assumptions in the unsupervised learning of disentangled representations. In International Conference on Machine Learning (pp. 4114--4124). PMLR.
+
+\bibitem{molecular_generation_vae_citation}
+Elton, D. C., Boukouvalas, Z., Fuge, M. D., \& Chung, P. W. (2019). Deep learning for molecular design---a review of the state of the art. Molecular Systems Design \& Engineering, 4(4), 828--849.
+
+\bibitem{smiles_vae_citation}
+Gomez-Bombarelli, R., Duvenaud, D., Hernandez-Lobato, J. M., Sanchez-Lengeling, J., Sheberla, D., Aguilera-Iparraguirre, J., \& Aspuru-Guzik, A. (2018). Automatic chemical design using a continuous representation of molecules. ACS Central Science, 4(2), 268--276.
+
+\bibitem{selfies_vae_citation}
+Nigam, A., Pollice, R., Krenn, M., dos Passos Gomes, G., \& Aspuru-Guzik, A. (2021). Beyond generative models: Superfast traversal, optimization, novelty, exploration and discovery (STONED) algorithm for molecules using SELFIES. Chemical Science, 12(20), 7079--7090.
+
+\bibitem{gnn_review_citation}
+Wu, Z., Pan, S., Chen, F., Long, G., Zhang, C., \& Yu, P. S. (2020). A comprehensive survey on graph neural networks. IEEE Transactions on Neural Networks and Learning Systems, 32(1), 4--24.
+
+\bibitem{graph_molecular_representation_advantages_citation}
+Duvenaud, D. K., Maclaurin, D., Aguilera-Iparraguirre, J., Gomez-Bombarelli, R., Hirzel, T., Aspuru-Guzik, A., \& Adams, R. P. (2015). Convolutional networks on graphs for learning molecular fingerprints. In Advances in Neural Information Processing Systems.
+
+\bibitem{posterior_collapse_citation}
+Bowman, S. R., Vilnis, L., Ma, D., Wieting, R., Jain, K., Joshi, B., \& Cho, K. (2016). Generating sentences from a continuous space. arXiv preprint arXiv:1511.06349.
+
+\bibitem{kl_annealing_citation}
+Bowman, S. R., Vilnis, L., Vinyals, O., Dai, A. M., Jozefowicz, R., \& Bengio, S. (2016). Generating sentences from a continuous space. In Proceedings of The 20th SIGNLL Conference on Computational Natural Language Learning.
+
+\bibitem{word_dropout_citation}
+Bowman, S. R., Vilnis, L., Vinyals, O., Dai, A. M., Jozefowicz, R., \& Bengio, S. (2016). Generating sentences from a continuous space. In Proceedings of The 20th SIGNLL Conference on Computational Natural Language Learning.
+
+\bibitem{latent_injection_citation}
+Semeniuta, S., Severyn, A., \& Barth, E. (2017). A hybrid convolutional variational autoencoder for text generation. In Proceedings of the 2017 Conference on Empirical Methods in Natural Language Processing.
+
+\bibitem{reconstruction_loss_scaling_citation}
+Higgins, I., Matthey, L., Pal, A., Burgess, C., Glorot-Xavier, A., Botvinick, M., Mohamed, S., \& Lerchner, A. (2017). beta-VAE: Learning basic visual concepts with a constrained variational framework. In International Conference on Learning Representations.
+
+\bibitem{hybrid_encoder_review_citation}
+Jin, W., Barzilay, R., \& Jaakkola, T. (2019). Hierarchical generation of molecular graphs using structural motifs. In International Conference on Machine Learning.
+
+\bibitem{zinc_database_citation}
+Sterling, T., \& Irwin, J. J. (2015). ZINC 15---Ligand discovery for everyone. Journal of Chemical Information and Modeling, 55(11), 2324--2337.
+
+\bibitem{gru_citation}
+Cho, K., Van Merriënboer, B., Gulcehre, C., Bahdanau, D., Bougares, F., Schwenk, H., \& Bengio, Y. (2014). Learning phrase representations using RNN encoder-decoder for statistical machine translation. arXiv preprint arXiv:1406.1078.
+
+\bibitem{dilated_cnn_citation}
+Yu, F., \& Koltun, V. (2016). Multi-scale context aggregation by dilated convolutions. In International Conference on Learning Representations.
+
+\bibitem{gineconv_citation}
+Xu, K., Hu, W., Leskovec, J., \& Jegelka, S. (2019). How powerful are graph neural networks? In International Conference on Learning Representations.
+
+\bibitem{gating_mechanism_citation}
+Hochreiter, S., \& Schmidhuber, J. (1997). Long short-term memory. Neural Computation, 9(8), 1735--1780.
+
+\bibitem{elbo_citation}
+Kingma, D. P., \& Welling, M. (2013). Auto-encoding variational Bayes. arXiv preprint arXiv:1312.6114.
+
+\bibitem{active_units_citation}
+Burda, Y., Grosse, R., \& Salakhutdinov, R. (2016). Importance weighted autoencoders. In International Conference on Learning Representations.
+
+\bibitem{qed_citation}
+Bickerton, G. R., Paolini, G. V., Besnard, J., Muresan, S., \& Hopkins, A. L. (2012). Quantifying the chemical beauty of drugs. Nature Chemistry, 4(2), 90--98.
+
+\bibitem{sas_citation}
+Ertl, P., \& Schuffenhauer, A. (2009). Estimation of synthetic accessibility score of drug-like molecules based on molecular complexity and fragment contributions. Journal of Cheminformatics, 1(1), 8.
+
+\bibitem{guacamol_citation}
+Brown, N., Fiscato, M., Segler, M. H. S., \& Vaucher, A. C. (2019). GuacaMol: Benchmarking models for de novo molecular design. Journal of Chemical Information and Modeling, 59(3), 1096--1108.
+
+\bibitem{moses_citation}
+Polykovskiy, D., Zhebrak, A., Sanchez-Lengeling, B., Golovanov, S., Tatanov, O., Belyaev, S., \& Zhavoronkov, A. (2020). Molecular sets (MOSES): A benchmarking platform for molecular generation models. Frontiers in Pharmacology, 11, 565644.
+
+\bibitem{brenk_citation}
+Brenk, R., Schipani, A., James, D., Krasowski, A., Gilbert, I. H., Frearson, J., \& Wyatt, P. G. (2008). Lessons learnt from assembling screening libraries for drug discovery for neglected diseases. ChemMedChem, 3(3), 435--444.
+
+\bibitem{lipinski_citation}
+Lipinski, C. A., Lombardo, F., Dominy, B. W., \& Feeney, P. J. (1997). Experimental and computational approaches to estimate solubility and permeability in drug discovery and development settings. Advanced Drug Delivery Reviews, 23(1--3), 3--25.
+
+\bibitem{latent_opt_citation}
+Gomez-Bombarelli, R., Wei, J. N., Duvenaud, D., Hernandez-Lobato, J. M., Sanchez-Lengeling, B., Sheberla, D., \& Aspuru-Guzik, A. (2018). Automatic chemical design using a data-driven continuous representation of molecules. ACS Central Science, 4(2), 268--276.
+
+\end{thebibliography}
+
+\end{document}

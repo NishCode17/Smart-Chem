@@ -1,137 +1,177 @@
-# SmartChem - Generative Drug Discovery Platform
+# SmartChem — AI-Powered De Novo Drug Discovery Platform
 
-A Deep Learning powered platform for generating, optimizing, and evaluating novel drug-like molecules.
-
----
-
-## Introduction
-SmartChem is a computational drug discovery tool designed to accelerate the "Lead Identification" phase of pharmaceutical research.
-
-Traditionally, finding new drug candidates is a manual, trial-and-error process. SmartChem automates this by using Generative AI (Variational Autoencoders) to explore the chemical space. It allows researchers to:
-1.  Generate completely new molecular structures.
-2.  Predict key properties (Solubility, Drug-likeness) instantly.
-3.  Optimize existing lead compounds to improve their efficacy.
-
-The system is built as a scalable, asynchronous web application, ensuring that heavy Machine Learning computations do not block the user experience.
+> **B.Tech Major Project · Department of Computer Science and Engineering**  
+> United College of Engineering & Research, Prayagraj  
+> Dr. A.P.J. Abdul Kalam Technical University, Lucknow · May 2026
 
 ---
 
-## System Architecture
+## Overview
 
-SmartChem follows an Asynchronous Producer-Consumer pattern to handle intensive ML workloads.
+SmartChem is an end-to-end generative AI platform for **de novo drug molecule design**. It combines a tripartite Variational Autoencoder (VAE) architecture with a full-stack web application, enabling medicinal chemists to generate, optimise, and evaluate novel drug candidates in a single unified interface.
 
-```mermaid
-graph LR
-    User["User / Frontend"] -->|"1. POST /jobs/generate"| API["FastAPI Backend"]
-    API -->|"2. Create Ticket (PENDING)"| DB[("MongoDB")]
-    Worker["Background Worker (Python)"] -->|"3. Poll & Claim Job"| DB
-    Worker -->|"4. Run VAE Inference"| Model["ML Model (PyTorch)"]
-    Model -->|"5. Return Molecules"| Worker
-    Worker -->|"6. Save Results (COMPLETED)"| DB
-    User -->|"7. Polling / WebSocket"| API
+**Key capabilities:**
+- **100% structurally valid** molecule generation via SELFIES grammar
+- **Three encoder modalities** — 1D dilated CNN, GINEConv GNN, and a novel Hybrid encoder with learned gated modality fusion
+- **Latent-space property optimisation** toward user-specified QED, LogP, and SAS targets
+- **Four-stage toxicity filtering** (Lipinski, PAINS, Brenk, NIH)
+- **Full-stack web platform** — React + TypeScript frontend, FastAPI backend, MongoDB, 3Dmol.js 3D viewer, Llama-3.3-70B AI assistant
+
+---
+
+## Repository Structure
+
+```
+Smart Chem/
+│
+├── backend/                      # FastAPI server — REST API, auth, job queue
+├── frontend/                     # React + TypeScript + Vite web application
+│
+├── models/                       # PyTorch model definitions
+│   ├── cnn_vae.py                #   1D Dilated CNN VAE encoder
+│   ├── gnn_vae.py                #   GINEConv GNN VAE encoder
+│   └── hybrid_vae.py             #   Gated modality fusion hybrid encoder
+│
+├── training/                     # All training & evaluation scripts
+│   ├── preprocess.py             #   ZINC-250k preprocessing pipeline
+│   ├── run_training.py           #   Main unified training entry point
+│   ├── run_cnn_training.py       #   CNN VAE training
+│   ├── run_gnn_training.py       #   GNN VAE training
+│   ├── run_hybrid_training.py    #   Hybrid encoder training
+│   ├── run_targeted_eval.py      #   Full targeted generation evaluation
+│   ├── train_vae.py              #   VAE training loop
+│   ├── train_predictor.py        #   Property predictor training loop
+│   ├── losses.py                 #   Loss functions (BCE, KL, free-bits)
+│   ├── sascorer.py               #   Synthetic Accessibility Score module
+│   ├── fpscores.pkl.gz           #   SA scorer fragment score data
+│   └── generate_all_plots.py     #   Regenerates evaluation/plots/ figures
+│
+├── evaluation/                   # Evaluation artefacts
+│   ├── logs/                     #   Structured metrics (CSV / JSON)
+│   │   └── raw_run_logs/         #   Raw training run stdout logs
+│   ├── plots/                    #   Generated report figures (fig1–fig8)
+│   └── verify_latent_space.py    #   Active-unit & latent analysis
+│
+├── data/                         # Preprocessed dataset tensors (gitignored)
+├── checkpoints/                  # Saved model weights (gitignored)
+├── images/                       # Report figures referenced by LaTeX
+│
+├── Docs/                         # All project documentation
+│   ├── main.tex                  #   LaTeX project report source
+│   ├── Research.tex              #   Research paper (original)
+│   ├── Research Paper V2.tex     #   Research paper (revised)
+│   ├── Major_Project_Report.pdf  #   Compiled final report
+│   ├── Project PPT.pptx          #   Viva presentation
+│   ├── Research_IEEE.docx        #   IEEE Word submission
+│   ├── Research_Paper.docx       #   Research paper Word format
+│   ├── PROJECT_DATA.md           #   Detailed project data reference
+│   ├── images/                   #   Copy of all report figures
+│   └── project_data/             #   Structured JSON knowledge base
+│
+├── README.md
+├── requirements.txt              # Python dependencies
+├── .env                          # Environment variables (gitignored)
+└── .gitignore
 ```
 
-### Key Design Choices
-*   **FastAPI:** Chosen for its high performance and native support for asynchronous programming (`async/await`).
-*   **MongoDB:** Used as both the database and the Job Queue. Its flexible schema allows storing complex molecular metadata without rigid tables.
-*   **Decoupled Worker:** The ML inference runs in a separate process. This ensures the API server remains responsive even if the model is processing a batch of 1,000 molecules.
+---
+
+## Quick Start
+
+### 1. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Preprocess data
+
+```bash
+python training/preprocess.py
+```
+
+### 3. Train models (in order)
+
+```bash
+python training/run_cnn_training.py       # Stage 1: CNN VAE
+python training/run_gnn_training.py       # Stage 2: GNN VAE
+python training/run_hybrid_training.py    # Stage 3: Hybrid encoder (base weights frozen)
+```
+
+### 4. Run evaluation
+
+```bash
+python training/run_targeted_eval.py      # Generates evaluation/logs/ CSVs
+python training/generate_all_plots.py     # Regenerates evaluation/plots/ figures
+```
+
+### 5. Launch web platform
+
+```bash
+# Backend
+cd backend && uvicorn main:app --reload
+
+# Frontend (separate terminal)
+cd frontend && npm install && npm run dev
+```
 
 ---
 
-## The AI Engine (Machine Learning)
+## Evaluation Results Summary
 
-At the core of SmartChem is a Variational Autoencoder (VAE) trained on the Zinc-250k dataset.
+| Metric | CNN | GNN | **Hybrid** |
+|--------|-----|-----|-----------|
+| Structural Validity | 100% | 100% | **100%** |
+| Novelty | 100% | 100% | **100%** |
+| Active Latent Units | 37 / 128 | 70 / 128 | **45 / 128** |
+| QED Hit Rate | 6.1% | 7.0% | **7.6%** |
+| LogP Hit Rate | 13.0% | 10.3% | **11.1%** |
+| All-Filter Pass Rate | 10.0% | 17.6% | **18.2%** |
+| Lipinski Compliance | 93.7% | 93.4% | **92.3%** |
+| Pairwise Diversity | ~0.895 | ~0.896 | **~0.897** |
 
-### 1. Representation: SELFIES
-Instead of using fragile SMILES strings (which often break), we utilize SELFIES (Self-Referencing Embedded Strings).
-*   **Advantage:** Every generated SELFIES string corresponds to a valid molecular graph. 100% robustness.
+Training hardware: NVIDIA GeForce RTX 3050 (4 GB VRAM) · Intel Core i5 (12th Gen) · 16 GB RAM
 
-### 2. The Model Architecture
-*   **Encoder (1D-CNN):** Convolutional layers scan the chemical string to extract local structural patterns (e.g., benzene rings, functional groups).
-*   **Latent Space (128-dim):** The detailed molecule is compressed into a continuous numerical vector ($z$).
-*   **Decoder (GRU):** A Recurrent Neural Network reconstructs the molecule character-by-character from the latent vector.
+---
 
-### 3. Optimization (Feedback Loop)
-We trained a secondary Property Predictor (MLP) that maps the latent vector $z$ directly to properties like QED (Drug-likeness) and LogP (Solubility).
-*   **Gradient Ascent:** We can mathematically "push" a molecule's vector in the direction of higher drug-likeness before decoding it, effectively "optimizing" the drug.
+## Architecture
+
+```
+SELFIES sequence ──► CNN Encoder ──────────┐
+                                           ├──► Gated Fusion ──► z ──► GRU Decoder ──► SELFIES
+Molecular graph  ──► GNN Encoder ──────────┘
+                                           
+z ──► MLP Predictor ──► (QED, LogP, SAS)
+z ◄── Adam gradient ascent (targeted generation)
+```
+
+**Anti-collapse stack:** Cyclical KL annealing (4 cycles) · Free bits · Word dropout (50%) · Latent injection at every GRU step · Weakened single-layer decoder
 
 ---
 
 ## Tech Stack
 
-### Backend & AI
-*   **Language:** Python 3.9+
-*   **Framework:** FastAPI
-*   **ML Libraries:** PyTorch, RDKit (Cheminformatics)
-*   **Data Processing:** SELFIES, Pandas, NumPy
-
-### Data & Infrastructure
-*   **Database:** MongoDB (NoSQL)
-*   **Task Queue:** Custom MongoDB-based Async Worker
-
-### Frontend
-*   **Framework:** React
-*   **Visualization:** 3D Molecule Viewer
+| Layer | Technology |
+|-------|------------|
+| ML Framework | PyTorch 2.1 + PyTorch Geometric |
+| Cheminformatics | RDKit · SELFIES · SAscore |
+| Backend | FastAPI · Motor (async MongoDB) · PyJWT |
+| Frontend | React 18 · TypeScript · Vite · Tailwind CSS |
+| 3D Visualisation | 3Dmol.js (WebGL) |
+| AI Assistant | Groq Llama-3.3-70B |
+| Database | MongoDB |
 
 ---
 
-## How to Run Locally
+## Authors
 
-### 1. Install Dependencies
-```bash
-pip install -r requirements.txt
-```
+| Name | Roll No. |
+|------|----------|
+| Nishant Singh Bisht | 2200100100228 |
+| Navya Singh | 2200100100219 |
+| Nishant Kumar Singh | 2200100100225 |
+| Shivam Sahani | 2200100100313 |
 
-### 2. Start the Database
-Ensure MongoDB is running locally on port `27017`.
-
-### 3. Start the API Server
-```bash
-uvicorn backend.main:app --reload
-```
-The server will run at `http://localhost:8000`.
-
-### 4. Start the Async Worker
-In a new terminal, run the worker to process background jobs:
-```bash
-python -m backend.worker
-```
-
----
-
-## Project Highlights
-*   **Posterior Collapse Solved:** Implemented KL-Divergence Annealing to stabilize VAE training.
-*   **Robust Generation:** Transitioned from SMILES to SELFIES to guarantee 100% valid chemical outputs.
-*   **Scalable Design:** Implemented an Atomic Job Queue using MongoDB `find_one_and_update` to handle concurrency.
-*   **Evaluation Pipeline:** Structured logging (`evaluation/`) captures per-epoch metrics, optimization trajectories, and validity statistics with automated plot generation.
-
----
-
-## Project Structure
-
-```
-SmartChem/
-├── backend/            ← FastAPI app, ML executor, optimizer, chem utils
-├── models/             ← VAE and PropertyPredictor architectures
-├── checkpoints/        ← Trained model weights (.pth)
-├── data/
-│   ├── raw/            ← Source CSV datasets (ZINC-based)
-│   └── processed/      ← Tokenized tensors + vocab JSON
-├── evaluation/
-│   ├── eval_logger.py  ← Central logging API
-│   ├── logs/           ← CSV + JSON metric logs
-│   ├── plots/          ← Generated PNG plots
-│   ├── analysis/       ← plot_metrics.py
-│   └── README.md       ← Evaluation system documentation
-├── scripts/
-│   └── run_training.py ← Unified VAE + Predictor training entry-point
-├── frontend/           ← React + Vite UI
-├── misc/               ← Utility scripts (preprocessing, DB helpers)
-├── requirements.txt
-└── README.md
-```
-
-### Generating Evaluation Plots
-```bash
-python evaluation/analysis/plot_metrics.py
-```
+**Supervisor:** Mr. Sachin Sonker, Assistant Professor  
+**Department:** Computer Science and Engineering  
+**Institution:** United College of Engineering & Research, Prayagraj
