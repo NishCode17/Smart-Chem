@@ -133,7 +133,7 @@ def _is_valid_candidate(mol):
 
 def run_lead_optimization(smiles: str):
     """
-    Core logic for OPTIMIZE_LEAD task.
+    Optimize lead.
     """
     if _model is None: load_resources()
     
@@ -203,7 +203,7 @@ def run_lead_optimization(smiles: str):
 
 def run_random_generation(num_molecules: int):
     """
-    Core logic for GENERATE_RANDOM task.
+    Generate random.
     """
     if _model is None: load_resources()
     
@@ -249,7 +249,7 @@ def run_random_generation(num_molecules: int):
 
 def run_targeted_generation(num_molecules: int, target_qed: float, target_logp: float, target_sas: float):
     """
-    Core logic for GENERATE_TARGETED task.
+    Generate targeted.
     """
     if _model is None: load_resources()
     if _predictor is None: raise ValueError("Predictor not loaded")
@@ -262,7 +262,7 @@ def run_targeted_generation(num_molecules: int, target_qed: float, target_logp: 
     
     with torch.enable_grad():
         z = torch.randn(INTERNAL_BATCH, 128).to(DEVICE)
-        # eval_log=True → emits per-step rows to optimization_log.csv
+        # optimization log
         z_opt = optimize_latent_vector(z, _predictor, target_props, eval_log=True)
 
     # Eval counters

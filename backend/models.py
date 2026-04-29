@@ -29,7 +29,7 @@ class PyObjectId(ObjectId):
 
 # Base Mongo Document
 class MongoBaseModel(BaseModel):
-    # ❗ No "_id" defined here
+    # No "_id" defined here
     model_config = ConfigDict(
         populate_by_name=True,
         arbitrary_types_allowed=True,

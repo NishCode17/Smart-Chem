@@ -36,7 +36,7 @@ def build_context_string(context: Optional[Dict[str, Any]]) -> Optional[str]:
             
     return "\n".join(lines)
 
-# Dynamically load the entire project context from the README
+# Load readme context
 try:
     readme_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "README.md")
     with open(readme_path, "r", encoding="utf-8") as f:
@@ -76,7 +76,7 @@ def get_groq_response(message: str, context: Optional[Dict[str, Any]], history: 
     messages_payload = [{"role": "system", "content": system_prompt}]
     
     if history:
-        for msg in history[-10:]:  # Keep last 10 messages for context window safety
+        for msg in history[-10:]:  # Keep last 10 messages
             if isinstance(msg, dict) and "role" in msg and "content" in msg:
                 messages_payload.append({"role": msg["role"], "content": msg["content"]})
                 

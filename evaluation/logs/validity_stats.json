@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-04-28T19:01:23Z",
+  "timestamp": "2026-04-29T04:13:17Z",
   "total_generated": 300,
-  "valid_selfies": 265,
-  "passed_rdkit": 84,
-  "passed_lipinski": 82,
-  "validity_rate": 0.8833,
-  "rdkit_pass_rate": 0.28,
-  "lipinski_rate": 0.2733
+  "valid_selfies": 262,
+  "passed_rdkit": 90,
+  "passed_lipinski": 87,
+  "validity_rate": 0.8733,
+  "rdkit_pass_rate": 0.3,
+  "lipinski_rate": 0.29
 }

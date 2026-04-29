@@ -32,7 +32,7 @@ class CNNEncoder(nn.Module):
         self.embedding = nn.Embedding(vocab_size, embedding_dim,
                                       padding_idx=0)
 
-        # 4 dilated conv blocks with increasing dilation for larger receptive field
+        # 4 conv blocks
         self.blocks = nn.Sequential(
             _ConvBlock(embedding_dim, hidden_dim, kernel_size=3, dilation=1),
             _ConvBlock(hidden_dim,    hidden_dim, kernel_size=3, dilation=2),
@@ -40,11 +40,11 @@ class CNNEncoder(nn.Module):
             _ConvBlock(hidden_dim,    hidden_dim, kernel_size=3, dilation=8),
         )
 
-        # Dual pooling — captures both peak and average signal
+        # Pooling
         self.max_pool = nn.AdaptiveMaxPool1d(1)
         self.avg_pool = nn.AdaptiveAvgPool1d(1)
 
-        # MLP projection: hidden_dim*2 → latent_dim (concat of max+avg)
+        # MLP
         pool_dim = hidden_dim * 2
         self.fc1    = nn.Linear(pool_dim, hidden_dim)
         self.norm1  = nn.LayerNorm(hidden_dim)
@@ -54,13 +54,12 @@ class CNNEncoder(nn.Module):
         self._init_weights()
 
     def _init_weights(self):
-        """Xavier init for all linear/conv layers; zero-init logvar bias."""
+        # Init weights
         for m in self.modules():
             if isinstance(m, (nn.Linear, nn.Conv1d)):
                 nn.init.xavier_uniform_(m.weight)
                 if m.bias is not None:
                     nn.init.zeros_(m.bias)
-        # Start logvar near zero → unit Gaussian prior at training start
         nn.init.zeros_(self.fc_logvar.weight)
         nn.init.zeros_(self.fc_logvar.bias)
 
@@ -72,7 +71,7 @@ class CNNEncoder(nn.Module):
         emb = self.embedding(x).permute(0, 2, 1)   # (B, embed, L)
         h   = self.blocks(emb)                       # (B, hidden, L)
 
-        # Dual pooling → concat → (B, hidden*2)
+        # Pool
         h_max = self.max_pool(h).squeeze(2)
         h_avg = self.avg_pool(h).squeeze(2)
         h_cat = torch.cat([h_max, h_avg], dim=1)
@@ -81,6 +80,6 @@ class CNNEncoder(nn.Module):
         h1 = F.gelu(self.norm1(self.fc1(h_cat)))
 
         mu     = self.fc_mu(h1)
-        logvar = self.fc_logvar(h1).clamp(-6.0, 2.0)  # numerical safety
+        logvar = self.fc_logvar(h1).clamp(-6.0, 2.0)
 
         return mu, logvar

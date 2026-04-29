@@ -24,7 +24,7 @@ def load_filters():
 
 def get_3d_mol_block(smiles):
     """
-    Generates a 3D MOL block for a given SMILES string.
+    Generate 3D MOL block.
     """
     try:
         mol = Chem.MolFromSmiles(smiles)
@@ -57,7 +57,7 @@ def get_mol_from_sequence(seq, mode="selfies"):
 
 def calculate_admet(mol):
     """
-    Calculates detailed ADMET properties.
+    Calculate ADMET properties.
     """
     if mol is None: return {}
     
@@ -96,8 +96,7 @@ def calculate_admet(mol):
 
 def estimate_admet_scores(mol):
     """
-    Returns the five 0-1 ADMET summary scores used by the frontend radar chart.
-    Delegates to compute_admet() — backward-compatible return shape.
+    Returns ADMET summary scores.
     """
     if mol is None:
         return {}
@@ -105,7 +104,7 @@ def estimate_admet_scores(mol):
 
 def check_toxicity_alerts(mol):
     """
-    Uses RDKit FilterCatalog to check for PAINS, Brenk, and NIH alerts.
+    Check toxicity alerts using RDKit.
     """
     if mol is None: return {}
     catalog = load_filters()
@@ -135,11 +134,10 @@ def check_toxicity_alerts(mol):
 # Scoring
 def get_longest_carbon_chain_length(mol):
     """
-    Calculates the length of the longest linear aliphatic carbon chain.
+    Get longest carbon chain length.
     """
     try:
-        # Matches any sequence of aliphatic carbons (not in aromatic rings)
-        # We try to match patterns of increasing length until we fail
+        # Match aliphatic carbons
         max_len = 0
         for length in range(20, 2, -1): # Check down from 20
             query = "[C;R0]" + ("[C;R0]" * (length - 1))
@@ -153,7 +151,7 @@ def get_longest_carbon_chain_length(mol):
 
 def score_molecule(mol, props):
     """
-    Calculates a fitness score for the molecule.
+    Calculate fitness score.
     """
     score = 1.0
     
@@ -183,7 +181,7 @@ def score_molecule(mol, props):
 
 def calculate_properties(mol):
     """
-    Calculate molecule properties and generate image.
+    Calculate molecule properties.
     """
     if mol is None:
         return {"valid": False, "image": None, "status": "Error"}
@@ -232,9 +230,9 @@ def calculate_properties(mol):
             "score": score,
             "longest_chain": longest_chain,
             "aromatic_rings": aromatic_rings,
-            "admet":      admet_full.get("summary", {}),  # 5-score summary (existing frontend key)
-            "admet_full": admet_full,                      # Full 20+ endpoint profile (new)
-            "admet_props": calculate_admet(mol),           # Raw RDKit props (MW, TPSA, etc.)
+            "admet":      admet_full.get("summary", {}),  # 5-score summary
+            "admet_full": admet_full,                      # full admet profile
+            "admet_props": calculate_admet(mol),           # raw properties
             "tox_alerts": check_toxicity_alerts(mol),
             "status": status,
             "image": f"data:image/png;base64,{img_str}"

@@ -206,16 +206,11 @@ const Login = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center text-sm">
                     <label className="flex items-center gap-2 text-muted-foreground">
                       <input type="checkbox" className="rounded border-border" />
                       Remember me
                     </label>
-                    {!isRegistering && (
-                      <a href="#" className="text-primary hover:underline">
-                        Forgot password?
-                      </a>
-                    )}
                   </div>
 
                   <Button

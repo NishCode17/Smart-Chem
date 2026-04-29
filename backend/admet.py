@@ -1,16 +1,5 @@
 """
-backend/admet.py
-================
-Comprehensive ADMET prediction using RDKit physicochemical descriptors.
-No extra dependencies beyond rdkit.
-
-Absorption  : HIA, Caco-2, oral bioavailability, water solubility
-Distribution: BBB penetration, PPB, VDss
-Metabolism  : CYP3A4 / CYP2D6 / CYP2C9 inhibition
-Excretion   : Renal clearance, half-life
-Toxicity    : hERG, AMES, DILI, skin sensitisation
-
-Rules from: Lipinski 1997, Ertl 2000, Veber 2002, Gleeson 2008, Di 2013.
+ADMET prediction using RDKit.
 """
 
 import math
@@ -18,9 +7,7 @@ from rdkit import Chem
 from rdkit.Chem import Descriptors, rdMolDescriptors
 
 
-# ---------------------------------------------------------------------------
 # Helpers
-# ---------------------------------------------------------------------------
 def _sig(x: float) -> float:
     return 1.0 / (1.0 + math.exp(-x))
 
@@ -31,9 +18,7 @@ def _gauss(x: float, mu: float, sigma: float) -> float:
     return math.exp(-0.5 * ((x - mu) / sigma) ** 2)
 
 
-# ---------------------------------------------------------------------------
-# Descriptor extraction (called once, reused by all sub-predictors)
-# ---------------------------------------------------------------------------
+# Descriptor extraction
 def _desc(mol) -> dict:
     return dict(
         mw    = Descriptors.ExactMolWt(mol),
@@ -50,16 +35,14 @@ def _desc(mol) -> dict:
     )
 
 
-# ---------------------------------------------------------------------------
-# A — Absorption
-# ---------------------------------------------------------------------------
+# Absorption
 def _absorption(d: dict) -> dict:
     logp, tpsa, mw, hbd, hba, rb, ar = (
         d["logp"], d["tpsa"], d["mw"],
         d["hbd"],  d["hba"],  d["rb"], d["ar"]
     )
 
-    # HIA — Veber rules + TPSA model (Ertl 2000)
+    # hia calculation
     hia = _clamp(
         1.0
         - _sig((tpsa - 100) / 20) * 0.6
@@ -67,14 +50,14 @@ def _absorption(d: dict) -> dict:
         - (0.1 if mw > 500 else 0)
     )
 
-    # Caco-2 permeability (Artursson 1996)
+    # caco-2
     caco2 = _clamp(_gauss(logp, 2.0, 1.5) * _clamp(1 - tpsa / 180))
 
-    # Oral bioavailability — RO5 proxy
+    # oral bioavailability using rule of 5
     ro5v = sum([mw > 500, logp > 5, hbd > 5, hba > 10])
     oral = _clamp(1.0 - ro5v * 0.2 - (0.15 if tpsa > 140 else 0))
 
-    # Water solubility — Delaney ESOL (2004)
+    # solubility
     log_s = 0.16 - 0.63 * logp - 0.0062 * mw + 0.066 * rb - 0.74 * ar
 
     return {
@@ -92,13 +75,11 @@ def _absorption(d: dict) -> dict:
     }
 
 
-# ---------------------------------------------------------------------------
-# D — Distribution
-# ---------------------------------------------------------------------------
+# Distribution
 def _distribution(d: dict) -> dict:
     logp, tpsa, mw, charge = d["logp"], d["tpsa"], d["mw"], d["charge"]
 
-    # BBB — CNS drugs: LogP 1-3, TPSA<90, MW<450 (Clark 1999)
+    # bbb penetrability
     bbb = _clamp(
         _gauss(logp, 2.0, 1.5)
         * _clamp(1 - tpsa / 140)
@@ -106,10 +87,10 @@ def _distribution(d: dict) -> dict:
         * (0.7 if abs(charge) > 0 else 1.0)
     )
 
-    # Plasma protein binding — high logP -> high PPB (Kratochwil 2002)
+    # ppb
     ppb = _clamp(_sig((logp - 1.5) / 1.2))
 
-    # VDss rough estimate (L/kg)
+    # vd estimate
     vd_score = _clamp(logp / 8.0 + (0.1 if charge > 0 else 0))
     vd_est   = round(0.5 + vd_score * 15, 1)
 
@@ -122,13 +103,11 @@ def _distribution(d: dict) -> dict:
     }
 
 
-# ---------------------------------------------------------------------------
-# M — Metabolism
-# ---------------------------------------------------------------------------
+# Metabolism
 def _metabolism(mol, d: dict) -> dict:
     logp, mw, ar, fsp3 = d["logp"], d["mw"], d["ar"], d["fsp3"]
 
-    # CYP3A4 — lipophilic, aromatic, large (Gleeson 2008)
+    # cyp3a4
     cyp3a4 = _clamp(
         0.3 * _sig((mw - 350) / 80)
       + 0.3 * _sig((logp - 3.0) / 1.0)
@@ -136,7 +115,7 @@ def _metabolism(mol, d: dict) -> dict:
       + 0.2 * _sig((4 - fsp3 * 10) / 2)
     )
 
-    # CYP2D6 — basic nitrogen compounds
+    # cyp2d6
     has_basic_n = any(
         a.GetAtomicNum() == 7 and a.GetTotalValence() <= 3 and a.GetFormalCharge() == 0
         for a in mol.GetAtoms()
@@ -147,7 +126,7 @@ def _metabolism(mol, d: dict) -> dict:
       + 0.3 * _sig((ar - 1) / 1.0)
     )
 
-    # CYP2C9 — acidic/neutral, sulfas, NSAIDs
+    # cyp2c9
     cyp2c9 = _clamp(
         0.4 * _sig((logp - 2.5) / 1.2)
       + 0.3 * _sig((mw - 300) / 100)
@@ -164,9 +143,7 @@ def _metabolism(mol, d: dict) -> dict:
     }
 
 
-# ---------------------------------------------------------------------------
-# E — Excretion
-# ---------------------------------------------------------------------------
+# Excretion
 def _excretion(d: dict) -> dict:
     logp, mw = d["logp"], d["mw"]
 
@@ -181,13 +158,11 @@ def _excretion(d: dict) -> dict:
     }
 
 
-# ---------------------------------------------------------------------------
-# T — Toxicity
-# ---------------------------------------------------------------------------
+# Toxicity
 def _toxicity(mol, d: dict) -> dict:
     logp, mw, ar = d["logp"], d["mw"], d["ar"]
 
-    # hERG — basic amine + high logP + aromatic (Sanguinetti 2006)
+    # herg score
     has_basic_n = any(
         a.GetAtomicNum() == 7 and a.GetFormalCharge() == 0 and a.GetTotalValence() <= 3
         for a in mol.GetAtoms()
@@ -199,7 +174,7 @@ def _toxicity(mol, d: dict) -> dict:
       + 0.1  * _sig((mw - 350) / 100)
     )
 
-    # AMES — nitro groups, aromatic amines, flat systems
+    # ames test
     has_nitro = mol.HasSubstructMatch(Chem.MolFromSmarts("[N+](=O)[O-]"))
     has_ar_nh2 = mol.HasSubstructMatch(Chem.MolFromSmarts("[NH2]c"))
     ames = _clamp(
@@ -209,7 +184,7 @@ def _toxicity(mol, d: dict) -> dict:
       + 0.15 * _sig((logp - 2.0) / 2.0)
     )
 
-    # DILI — high logP, large MW, reactive groups (Chen 2016)
+    # dili score
     has_reactive = any([
         mol.HasSubstructMatch(Chem.MolFromSmarts("[CX3](=O)[OX2H]")),
         mol.HasSubstructMatch(Chem.MolFromSmarts("[CX3](=O)[F,Cl,Br]")),
@@ -222,7 +197,7 @@ def _toxicity(mol, d: dict) -> dict:
       + 0.2  * _sig((ar - 2) / 1.5)
     )
 
-    # Skin sensitisation — Michael acceptors (Basketter 2014)
+    # skin sensitisation
     has_michael = mol.HasSubstructMatch(Chem.MolFromSmarts("[CX3]=[CX3][CX3](=O)"))
     skin = _clamp(
         (0.45 if has_michael else 0.0)
@@ -242,9 +217,7 @@ def _toxicity(mol, d: dict) -> dict:
     }
 
 
-# ---------------------------------------------------------------------------
-# Summary — maps onto existing AdmetProperties model (5 keys, backward compat)
-# ---------------------------------------------------------------------------
+# Summary
 def _summary(ab, di, me, ex, to) -> dict:
     absorption   = (ab["hia_score"] + ab["caco2_score"] + ab["oral_f_score"]) / 3
     distribution = (di["bbb_score"] + (1 - di["ppb_score"]) * 0.5 + 0.5) / 2
@@ -260,9 +233,7 @@ def _summary(ab, di, me, ex, to) -> dict:
     }
 
 
-# ---------------------------------------------------------------------------
 # Public API
-# ---------------------------------------------------------------------------
 def compute_admet(mol) -> dict:
     """
     Accepts an RDKit Mol, returns a flat dict with keys:

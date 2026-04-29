@@ -3,17 +3,7 @@ import torch
 def optimize_latent_vector(z, predictor, target_props, steps=75, lr=0.02,
                            eval_log=False):
     """
-    Lead optimization mode.
-    Maintains latent vector values within [-3.0, 3.0] to preserve molecule validity.
-
-    Parameters
-    ----------
-    z            : Initial latent tensor (batch_size × latent_dim)
-    predictor    : PropertyPredictor model
-    target_props : [target_qed, target_logp, target_sas]
-    steps        : Number of gradient-descent steps (default 75)
-    lr           : Adam learning rate (default 0.02)
-    eval_log     : If True, emit per-step rows to evaluation/logs/optimization_log.csv
+    Optimize latent vector for a target property.
     """
     z_opt = z.clone().detach().requires_grad_(True)
     optimizer = torch.optim.Adam([z_opt], lr=lr)

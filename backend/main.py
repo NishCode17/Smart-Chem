@@ -54,7 +54,7 @@ def load_resources():
 @app.post("/optimize/lead")
 def optimize_lead(req: OptimizeRequest):
     """
-    Synchronous Endpoint
+    Optimize endpoint
     """
     try:
         import backend.ml_executor as ml_exec
@@ -102,7 +102,7 @@ from backend.assistant import ChatRequest, get_groq_response
 
 @app.post("/assistant/chat")
 def chat_assistant(req: ChatRequest):
-    # Pass history into a debugging variable via a hacky global temporarily, or just return it.
+    # Get response
     response = get_groq_response(req.message, req.context, req.history)
     return {"reply": response}
 
@@ -120,8 +120,7 @@ def get_3d_structure(req: StructureRequest):
 @app.post("/utils/analyze")
 def analyze_molecule(req: StructureRequest):
     """
-    Analyzes a SMILES string and returns molecular properties, ADMET scores,
-    and toxicity alerts using RDKit.
+    Analyze a SMILES string.
     """
     if not req.smiles or not req.smiles.strip():
         raise HTTPException(status_code=400, detail="SMILES string is required")
@@ -149,9 +148,7 @@ def analyze_molecule(req: StructureRequest):
 @app.post("/utils/admet")
 def predict_admet(req: StructureRequest):
     """
-    Comprehensive ADMET profile for any SMILES.
-    Returns 20+ endpoints across Absorption, Distribution,
-    Metabolism, Excretion, Toxicity plus a composite drug_score.
+    Get ADMET profile for a SMILES.
     """
     if not req.smiles or not req.smiles.strip():
         raise HTTPException(status_code=400, detail="SMILES string is required")

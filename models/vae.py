@@ -11,9 +11,9 @@ class VAE(nn.Module):
         self.max_len    = max_len
         self.hidden_dim = hidden_dim
         self.latent_dim = latent_dim
-        self.num_layers = 1          # FIX 5: reduced from 3 → 1 for initial stability
+        self.num_layers = 1
 
-        # Encoder — architecture unchanged (per spec)
+        # Encoder
         self.encoder = CNNEncoder(vocab_size, embedding_dim, latent_dim,
                                   hidden_dim=hidden_dim)
 
@@ -21,7 +21,6 @@ class VAE(nn.Module):
         self.embedding_dim = embedding_dim
         self.embedding     = nn.Embedding(vocab_size, embedding_dim, padding_idx=0)
         self.decoder_input = nn.Linear(latent_dim, hidden_dim * self.num_layers)
-        # GRU input = [embedding || z] — forces z usage at every timestep
         self.gru    = nn.GRU(embedding_dim + latent_dim, hidden_dim,
                              num_layers=self.num_layers,
                              batch_first=True, dropout=0.0)
@@ -40,7 +39,6 @@ class VAE(nn.Module):
 
     def reparameterize(self, mu, logvar):
         std = torch.exp(0.5 * logvar)
-        # FIX 7: slightly amplified noise → encourages posterior spread
         eps = torch.randn_like(std) * 1.1
         return mu + eps * std
 
@@ -51,7 +49,6 @@ class VAE(nn.Module):
         return h.permute(1, 0, 2).contiguous()                 # (L, B, hidden)
 
     def forward(self, x):
-        """Inference path — no word dropout."""
         mu, logvar = self.encoder(x)
         z          = self.reparameterize(mu, logvar)
         hidden     = self._hidden_from_z(z)
