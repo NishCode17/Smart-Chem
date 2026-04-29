@@ -1,24 +1,5 @@
 """
-models/gnn_encoder.py
-
 GNN encoder for molecular graph → latent space.
-
-Architecture (3-layer GINEConv, matching original spec):
-  - Initial node projection → hidden_dim
-  - 3 × GINEConv blocks with BatchNorm + residuals
-  - Global mean + max pooling (concatenated)
-  - Two-layer MLP heads → mu, logvar
-  - logvar clamped to [-6, 2]  (matches CNN encoder — prevents NaN / extreme variance)
-  - logvar_net zero-initialised → starts near unit Gaussian prior
-
-Fixes vs. original (large-dataset robustness):
-  1. 3rd GINEConv layer added  — matches spec; deeper receptive field for 100k diversity
-  2. logvar clamped to [-6, 2] — at 100k with more gradient steps, unclamped logvar
-                                  can collapse or explode (exp(logvar) → 0 or inf)
-  3. logvar_net last layer zero-init — mirrors CNN encoder; stable start at large scale
-  4. Removed F.normalize before MLP — hard unit-sphere constraint kills gradient
-                                       diversity when minibatch distribution is wide
-                                       (100k); replaced with LayerNorm inside the MLP
 """
 
 import torch
