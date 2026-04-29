@@ -39,6 +39,11 @@ export const useSmartChemAssistant = () => {
         setIsLoading(true);
         setError(null);
 
+        // Format history for the backend (skip the initial welcome message)
+        const chatHistory = messages
+            .filter(m => m.id !== "1")
+            .map(m => ({ role: m.role, content: m.content }));
+
         try {
             const response = await fetch("http://localhost:8000/assistant/chat", {
                 method: "POST",
@@ -51,6 +56,7 @@ export const useSmartChemAssistant = () => {
                         smiles: context.smiles,
                         ...context.properties
                     } : undefined,
+                    history: chatHistory,
                 }),
             });
 

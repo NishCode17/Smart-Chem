@@ -5,10 +5,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   FlaskConical,
-  FileText,
+  BrainCircuit,
   Lightbulb,
-  Search,
-  Sparkles
+  ShieldAlert,
+  Sparkles,
+  Network
 } from "lucide-react";
 import { useSmartChemAssistant } from "@/hooks/useSmartChemAssistant";
 
@@ -18,24 +19,24 @@ const Assistant = () => {
 
   const quickActions = [
     {
-      icon: FlaskConical,
-      label: "Analyze a molecule",
-      prompt: "Can you analyze this molecule and tell me about its drug-likeness?",
+      icon: ShieldAlert,
+      label: "ADMET Interpretation",
+      prompt: "My molecule flagged as high risk for hERG and DILI toxicity. What structural features usually cause these, and how can I fix them?",
     },
     {
-      icon: Search,
-      label: "Search literature",
-      prompt: "Find recent papers about EGFR inhibitors in cancer treatment",
+      icon: Network,
+      label: "Platform Architecture",
+      prompt: "Can you explain how the Hybrid GNN-CNN encoder in SmartChem's architecture fuses sequences and graphs?",
     },
     {
       icon: Lightbulb,
-      label: "Optimization ideas",
-      prompt: "Suggest ways to improve the bioavailability of my lead compound",
+      label: "Medicinal Chemistry",
+      prompt: "How can I lower the LogP of my lead compound without losing its aromatic rings or drug-likeness?",
     },
     {
-      icon: FileText,
-      label: "Explain a concept",
-      prompt: "Explain the Lipinski Rule of 5 and why it matters",
+      icon: BrainCircuit,
+      label: "Toxicity Filters",
+      prompt: "What are PAINS and Brenk alerts in drug discovery, and why do they immediately disqualify a molecule?",
     },
   ];
 
@@ -79,26 +80,23 @@ const Assistant = () => {
             ))}
 
             {/* Tips Card */}
-            <Card className="p-4 mt-6">
-              <h4 className="font-display text-sm font-semibold text-foreground mb-2">
-                Pro Tips
+            <Card className="p-4 mt-6 bg-secondary/20 border-primary/20">
+              <h4 className="font-display text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                <BrainCircuit className="w-4 h-4 text-primary" />
+                Llama-3 Superpowers
               </h4>
-              <ul className="space-y-2 text-xs text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <span className="text-primary">•</span>
-                  Paste SMILES strings directly for analysis
+              <ul className="space-y-3 text-xs text-muted-foreground">
+                <li className="flex items-start gap-2 leading-relaxed">
+                  <span className="text-primary mt-0.5">•</span>
+                  Ask how to fix specific ADMET violations (like poor BBB penetration)
                 </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary">•</span>
-                  Ask for ADMET predictions
+                <li className="flex items-start gap-2 leading-relaxed">
+                  <span className="text-primary mt-0.5">•</span>
+                  Query about SmartChem's Hybrid VAE and GNN machine learning concepts
                 </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary">•</span>
-                  Request synthesis routes
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary">•</span>
-                  Compare multiple molecules
+                <li className="flex items-start gap-2 leading-relaxed">
+                  <span className="text-primary mt-0.5">•</span>
+                  Learn the chemical rationale behind QED and SAS scoring functions
                 </li>
               </ul>
             </Card>

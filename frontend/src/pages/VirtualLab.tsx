@@ -110,13 +110,13 @@ const VirtualLab = () => {
 
   // Flatten properties for UI
   const displayProperties = moleculeData?.properties ? {
-    logP: moleculeData.properties.logp,
-    qed: moleculeData.properties.qed,
-    molWeight: moleculeData.properties.mw || moleculeData.properties.molWeight || 300,
-    hbdCount: moleculeData.properties.hbd || moleculeData.properties.hbdCount || 2,
-    hbaCount: moleculeData.properties.hba || moleculeData.properties.hbaCount || 4,
-    tpsa: moleculeData.properties.tpsa || 50,
-    rotBonds: moleculeData.properties.rot_bonds || moleculeData.properties.rotBonds || 3,
+    logP: moleculeData.properties.logp ?? moleculeData.properties.logP ?? 0,
+    qed: moleculeData.properties.qed ?? 0,
+    molWeight: moleculeData.properties.mw ?? moleculeData.properties.molWeight ?? 0,
+    hbdCount: moleculeData.properties.hbd ?? moleculeData.properties.hbdCount ?? 0,
+    hbaCount: moleculeData.properties.hba ?? moleculeData.properties.hbaCount ?? 0,
+    tpsa: moleculeData.properties.tpsa ?? 0,
+    rotBonds: moleculeData.properties.rot_bonds ?? moleculeData.properties.rotBonds ?? 0,
   } : {
     logP: 0, qed: 0, molWeight: 0, hbdCount: 0, hbaCount: 0, tpsa: 0, rotBonds: 0
   };

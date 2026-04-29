@@ -97,7 +97,28 @@ const DesignStudio = () => {
         target_logp: targetLogP,
         target_sas: 3.0
       });
-      setGeneratedMolecules(mapResults(res.data));
+
+      // Calculate distances to find the best match
+      let bestIndex = -1;
+      let minDistance = Infinity;
+
+      res.data.forEach((r: any, index: number) => {
+        const qedDiff = Math.abs(r.properties.qed - targetQED);
+        const logpDiff = Math.abs(r.properties.logp - targetLogP);
+        // Normalize logp diff (since logP is on a larger scale than QED) to give them equal weight
+        const distance = qedDiff + (logpDiff * 0.2); 
+        if (distance < minDistance) {
+          minDistance = distance;
+          bestIndex = index;
+        }
+      });
+
+      const mapped = mapResults(res.data).map((mol, idx) => ({
+        ...mol,
+        isBestMatch: idx === bestIndex
+      }));
+
+      setGeneratedMolecules(mapped);
       toast.success(`Generated ${res.data.length} targeted molecules`);
     } catch (e: any) {
       toast.error(e.message || "Generation failed");
@@ -361,10 +382,11 @@ const DesignStudio = () => {
                 </Card>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {generatedMolecules.map((molecule) => (
+                  {generatedMolecules.map((molecule: any) => (
                     <MoleculeCard
                       key={molecule.id}
                       {...molecule}
+                      isBestMatch={molecule.isBestMatch}
                       onSave={() => handleSave(molecule)}
                       onSendToLab={() => handleSendToLab(molecule)}
                     />

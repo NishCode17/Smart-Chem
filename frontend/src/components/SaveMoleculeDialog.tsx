@@ -82,13 +82,13 @@ export function SaveMoleculeDialog({
                 tags: ["Lead"],
 
                 properties: {
-                    logp: molecule.properties?.logP ?? 0,
+                    logp: molecule.properties?.logP ?? molecule.properties?.logp ?? 0,
                     qed: molecule.properties?.qed ?? 0,
-                    mw: molecule.properties?.molWeight ?? 0,
+                    mw: molecule.properties?.molWeight ?? molecule.properties?.mw ?? 0,
                     tpsa: molecule.properties?.tpsa ?? 0,
-                    hbd: molecule.properties?.hbdCount ?? 0,
-                    hba: molecule.properties?.hbaCount ?? 0,
-                    rot_bonds: molecule.properties?.rotatable ?? 0,
+                    hbd: molecule.properties?.hbdCount ?? molecule.properties?.hbd ?? 0,
+                    hba: molecule.properties?.hbaCount ?? molecule.properties?.hba ?? 0,
+                    rot_bonds: molecule.properties?.rotatable ?? molecule.properties?.rot_bonds ?? 0,
                 },
 
                 // VALIDATION FIX: Ensure ADMET object has correct shape

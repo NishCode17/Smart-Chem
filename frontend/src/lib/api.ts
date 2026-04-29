@@ -162,6 +162,10 @@ async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Pr
         throw new Error(errorMessage);
     }
 
+    if (res.status === 204) {
+        return {} as T;
+    }
+
     return res.json();
 }
 

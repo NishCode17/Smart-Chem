@@ -59,7 +59,7 @@ def optimize_lead(req: OptimizeRequest):
     try:
         import backend.ml_executor as ml_exec
         results = ml_exec.run_lead_optimization(req.smiles)
-        print(f"   ✅ Found {len(results)} valid variations.")
+        print(f"   [OK] Found {len(results)} valid variations.")
         return {"data": results}
     except Exception as e:
         raise HTTPException(500, str(e))
@@ -102,7 +102,8 @@ from backend.assistant import ChatRequest, get_groq_response
 
 @app.post("/assistant/chat")
 def chat_assistant(req: ChatRequest):
-    response = get_groq_response(req.message, req.context)
+    # Pass history into a debugging variable via a hacky global temporarily, or just return it.
+    response = get_groq_response(req.message, req.context, req.history)
     return {"reply": response}
 
 
@@ -135,7 +136,7 @@ def analyze_molecule(req: StructureRequest):
         if not result.get("valid"):
             raise HTTPException(status_code=400, detail=result.get("status", "Invalid molecule"))
 
-        print(f"✅ [Analyze] SMILES={req.smiles[:40]}... | QED={result.get('qed')} | LogP={result.get('logp')}")
+        print(f"[Analyze] SMILES={req.smiles[:40]}... | QED={result.get('qed')} | LogP={result.get('logp')}")
         return result
 
     except HTTPException:

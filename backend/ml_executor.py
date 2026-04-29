@@ -53,12 +53,12 @@ def load_resources():
     global _model, _predictor, _idx_to_token, _token_to_idx
     
     if _model is not None:
-        print("⚡ Resources already loaded.")
+        print("[Executor] Resources already loaded.")
         return
 
-    print("⚡ [Executor] Loading Resources...")
-    if not os.path.exists(VOCAB_PATH): 
-        print(f"❌ Critical: Vocab not found at {VOCAB_PATH}")
+    print("[Executor] Loading Resources...")
+    if not os.path.exists(VOCAB_PATH):
+        print(f"[ERROR] Critical: Vocab not found at {VOCAB_PATH}")
         return
         
     with open(VOCAB_PATH, 'r') as f: vocab = json.load(f)
@@ -73,15 +73,29 @@ def load_resources():
     
     _model = VAE(vocab_size, latent_dim=128).to(DEVICE)
     if os.path.exists(VAE_CHECKPOINT):
-        _model.load_state_dict(torch.load(VAE_CHECKPOINT, map_location=DEVICE))
-        _model.eval()
-        print("✅ VAE Loaded")
+        try:
+            state = torch.load(VAE_CHECKPOINT, map_location=DEVICE)
+            missing, unexpected = _model.load_state_dict(state, strict=False)
+            if missing:
+                print(f"[WARN] VAE checkpoint: {len(missing)} missing keys (architecture mismatch)")
+            if unexpected:
+                print(f"[WARN] VAE checkpoint: {len(unexpected)} unexpected keys")
+            _model.eval()
+            print("[OK] VAE Loaded")
+        except Exception as e:
+            print(f"[WARN] VAE checkpoint load failed: {e}")
 
     _predictor = PropertyPredictor(latent_dim=128).to(DEVICE)
     if os.path.exists(PREDICTOR_CHECKPOINT):
-        _predictor.load_state_dict(torch.load(PREDICTOR_CHECKPOINT, map_location=DEVICE))
-        _predictor.eval()
-        print("✅ Predictor Loaded")
+        try:
+            state = torch.load(PREDICTOR_CHECKPOINT, map_location=DEVICE)
+            missing, unexpected = _predictor.load_state_dict(state, strict=False)
+            if missing:
+                print(f"[WARN] Predictor checkpoint: {len(missing)} missing keys")
+            _predictor.eval()
+            print("[OK] Predictor Loaded")
+        except Exception as e:
+            print(f"[WARN] Predictor checkpoint load failed: {e}")
 
 # Internal helpers
 def _decode_tensor(tensor_seq):
@@ -123,7 +137,7 @@ def run_lead_optimization(smiles: str):
     """
     if _model is None: load_resources()
     
-    print(f"\n🔧 [Executor] OPTIMIZING: {smiles[:15]}...")
+    print(f"\n[Executor] OPTIMIZING: {smiles[:15]}...")
     
     z_lead = _smiles_to_latent(smiles)
     if z_lead is None:

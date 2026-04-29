@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { FlaskConical, Save, Send, Sparkles } from "lucide-react";
+import { FlaskConical, Save, Send, Sparkles, Target } from "lucide-react";
 
 interface MoleculeCardProps {
   id: string;
@@ -16,6 +16,7 @@ interface MoleculeCardProps {
   };
   onSave?: () => void;
   onSendToLab?: () => void;
+  isBestMatch?: boolean;
 }
 
 export const MoleculeCard = ({
@@ -25,6 +26,7 @@ export const MoleculeCard = ({
   properties,
   onSave,
   onSendToLab,
+  isBestMatch = false,
 }: MoleculeCardProps) => {
   return (
     <motion.div
@@ -33,7 +35,13 @@ export const MoleculeCard = ({
       whileHover={{ y: -4 }}
       transition={{ duration: 0.3 }}
     >
-      <Card className="overflow-hidden hover-glow">
+      <Card className={`overflow-hidden hover-glow relative ${isBestMatch ? 'ring-2 ring-primary shadow-[0_0_15px_rgba(var(--primary),0.3)]' : ''}`}>
+        {isBestMatch && (
+          <div className="absolute top-2 right-2 z-20 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-1 rounded-full shadow-md flex items-center gap-1">
+            <Target className="w-3 h-3" />
+            Best Match
+          </div>
+        )}
         <div className="h-48 bg-white flex items-center justify-center relative overflow-hidden">
           {image ? (
             <img src={image} alt="Molecule Structure" className="w-full h-full object-contain p-2" />

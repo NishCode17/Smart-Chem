@@ -12,10 +12,11 @@ SmartChem is an end-to-end generative AI platform for **de novo drug molecule de
 
 **Key capabilities:**
 - **100% structurally valid** molecule generation via SELFIES grammar
-- **Three encoder modalities** — 1D dilated CNN, GINEConv GNN, and a novel Hybrid encoder with learned gated modality fusion
+- **Three encoder modalities** — 1D dilated CNN, GINEConv GNN, and a Hybrid encoder with learned gated modality fusion
 - **Latent-space property optimisation** toward user-specified QED, LogP, and SAS targets
 - **Four-stage toxicity filtering** (Lipinski, PAINS, Brenk, NIH)
-- **Full-stack web platform** — React + TypeScript frontend, FastAPI backend, MongoDB, 3Dmol.js 3D viewer, Llama-3.3-70B AI assistant
+- **Comprehensive ADMET profiling** — 20+ endpoints (HIA, Caco-2, BBB, CYP450, hERG, AMES, DILI, etc.)
+- **Full-stack web platform** — React + TypeScript frontend, FastAPI backend, MongoDB Atlas, 3Dmol.js 3D viewer, Llama-3.3-70B AI assistant
 
 ---
 
@@ -25,12 +26,22 @@ SmartChem is an end-to-end generative AI platform for **de novo drug molecule de
 Smart Chem/
 │
 ├── backend/                      # FastAPI server — REST API, auth, job queue
+│   ├── main.py                   #   App entry point + all route definitions
+│   ├── admet.py                  #   Comprehensive ADMET predictor (20+ endpoints)
+│   ├── chem_utils.py             #   RDKit property calculation & filtering
+│   ├── ml_executor.py            #   VAE generation & optimization logic
+│   ├── optimizer.py              #   Latent space gradient optimization
+│   ├── assistant.py              #   Groq LLM chat integration
+│   ├── database.py               #   MongoDB Atlas connection
+│   ├── models.py                 #   Pydantic data models
+│   ├── auth_utils.py             #   JWT auth helpers
+│   └── routers/                  #   auth, projects, molecules, jobs
+│
 ├── frontend/                     # React + TypeScript + Vite web application
 │
 ├── models/                       # PyTorch model definitions
-│   ├── cnn_vae.py                #   1D Dilated CNN VAE encoder
-│   ├── gnn_vae.py                #   GINEConv GNN VAE encoder
-│   └── hybrid_vae.py             #   Gated modality fusion hybrid encoder
+│   ├── vae.py                    #   VAE (CNN / GNN / Hybrid encoder)
+│   └── predictor.py              #   Property predictor (QED, LogP, SAS)
 │
 ├── training/                     # All training & evaluation scripts
 │   ├── preprocess.py             #   ZINC-250k preprocessing pipeline
@@ -48,9 +59,8 @@ Smart Chem/
 │
 ├── evaluation/                   # Evaluation artefacts
 │   ├── logs/                     #   Structured metrics (CSV / JSON)
-│   │   └── raw_run_logs/         #   Raw training run stdout logs
-│   ├── plots/                    #   Generated report figures (fig1–fig8)
-│   └── verify_latent_space.py    #   Active-unit & latent analysis
+│   │   └── raw_run_logs/         #   Raw training stdout logs
+│   └── plots/                    #   Generated report figures (fig1–fig8)
 │
 ├── data/                         # Preprocessed dataset tensors (gitignored)
 ├── checkpoints/                  # Saved model weights (gitignored)
@@ -58,61 +68,83 @@ Smart Chem/
 │
 ├── Docs/                         # All project documentation
 │   ├── main.tex                  #   LaTeX project report source
-│   ├── Research.tex              #   Research paper (original)
-│   ├── Research Paper V2.tex     #   Research paper (revised)
 │   ├── Major_Project_Report.pdf  #   Compiled final report
 │   ├── Project PPT.pptx          #   Viva presentation
-│   ├── Research_IEEE.docx        #   IEEE Word submission
-│   ├── Research_Paper.docx       #   Research paper Word format
-│   ├── PROJECT_DATA.md           #   Detailed project data reference
-│   ├── images/                   #   Copy of all report figures
-│   └── project_data/             #   Structured JSON knowledge base
+│   └── ...
 │
 ├── README.md
-├── requirements.txt              # Python dependencies
+├── requirements.txt
 ├── .env                          # Environment variables (gitignored)
 └── .gitignore
 ```
 
 ---
 
-## Quick Start
+## Prerequisites
 
-### 1. Install dependencies
+- **Conda environment:** `smartchem` (Python 3.10+)
+- **Node.js** 18+ (for frontend)
+- **MongoDB Atlas** cluster with credentials in `.env`
 
+Install Python dependencies (first time only):
 ```bash
+conda activate smartchem
 pip install -r requirements.txt
 ```
 
-### 2. Preprocess data
+---
+
+## Running the Project
+
+> **All commands are run from the project root:**  
+> `d:\Final Year Project\Smart Chem\`
+
+### Terminal 1 — Backend (FastAPI)
 
 ```bash
-python training/preprocess.py
+conda activate smartchem
+python -m uvicorn backend.main:app --reload --port 8000
 ```
 
-### 3. Train models (in order)
+The API will be live at **http://localhost:8000**  
+Interactive docs at **http://localhost:8000/docs**
+
+### Terminal 2 — Frontend (React + Vite)
 
 ```bash
-python training/run_cnn_training.py       # Stage 1: CNN VAE
-python training/run_gnn_training.py       # Stage 2: GNN VAE
-python training/run_hybrid_training.py    # Stage 3: Hybrid encoder (base weights frozen)
+cd frontend
+npm install        # first time only
+npm run dev
 ```
 
-### 4. Run evaluation
+The web app will be live at **http://localhost:8080**
+
+---
+
+> **Important:** Always run the backend with `python -m uvicorn backend.main:app` from the **project root**, not from inside the `backend/` subfolder. Running from inside `backend/` breaks relative import paths (`models/`, `checkpoints/`, `data/`).
+
+---
+
+## Training (optional — checkpoints already included)
 
 ```bash
-python training/run_targeted_eval.py      # Generates evaluation/logs/ CSVs
-python training/generate_all_plots.py     # Regenerates evaluation/plots/ figures
+conda activate smartchem
+
+# Stage 1: CNN VAE
+python training/run_cnn_training.py
+
+# Stage 2: GNN VAE
+python training/run_gnn_training.py
+
+# Stage 3: Hybrid encoder (requires Stage 1 & 2 checkpoints)
+python training/run_hybrid_training.py
 ```
 
-### 5. Launch web platform
+## Evaluation
 
 ```bash
-# Backend
-cd backend && uvicorn main:app --reload
-
-# Frontend (separate terminal)
-cd frontend && npm install && npm run dev
+python training/run_targeted_eval.py   # generates evaluation/logs/ CSVs
+python training/generate_all_plots.py  # regenerates evaluation/plots/ figures
 ```
 
 ---
@@ -130,19 +162,37 @@ cd frontend && npm install && npm run dev
 | Lipinski Compliance | 93.7% | 93.4% | **92.3%** |
 | Pairwise Diversity | ~0.895 | ~0.896 | **~0.897** |
 
-Training hardware: NVIDIA GeForce RTX 3050 (4 GB VRAM) · Intel Core i5 (12th Gen) · 16 GB RAM
+Training hardware: NVIDIA GeForce RTX 3050 (4 GB VRAM) · Intel Core i5-12th Gen · 16 GB RAM
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/auth/register` | Register new user |
+| POST | `/auth/login` | Login (returns JWT) |
+| POST | `/generate` | Random molecule generation |
+| POST | `/generate/targeted` | Targeted generation (QED/LogP/SAS) |
+| POST | `/optimize/lead` | Lead compound optimisation |
+| POST | `/utils/analyze` | Full property analysis for a SMILES |
+| POST | `/utils/admet` | Comprehensive 20+ endpoint ADMET profile |
+| POST | `/utils/3d` | Generate 3D MOL block |
+| POST | `/assistant/chat` | LLM chemistry assistant |
+| GET | `/projects/` | List user projects |
+| GET | `/molecules/` | List saved molecules |
 
 ---
 
 ## Architecture
 
 ```
-SELFIES sequence ──► CNN Encoder ──────────┐
-                                           ├──► Gated Fusion ──► z ──► GRU Decoder ──► SELFIES
-Molecular graph  ──► GNN Encoder ──────────┘
-                                           
-z ──► MLP Predictor ──► (QED, LogP, SAS)
-z ◄── Adam gradient ascent (targeted generation)
+SELFIES sequence --> CNN Encoder ──────────┐
+                                           ├──> Gated Fusion --> z --> GRU Decoder --> SELFIES
+Molecular graph  --> GNN Encoder ──────────┘
+
+z --> MLP Predictor --> (QED, LogP, SAS)
+z <-- Adam gradient ascent (targeted generation)
 ```
 
 **Anti-collapse stack:** Cyclical KL annealing (4 cycles) · Free bits · Word dropout (50%) · Latent injection at every GRU step · Weakened single-layer decoder
@@ -156,10 +206,10 @@ z ◄── Adam gradient ascent (targeted generation)
 | ML Framework | PyTorch 2.1 + PyTorch Geometric |
 | Cheminformatics | RDKit · SELFIES · SAscore |
 | Backend | FastAPI · Motor (async MongoDB) · PyJWT |
-| Frontend | React 18 · TypeScript · Vite · Tailwind CSS |
+| Frontend | React 18 · TypeScript · Vite |
 | 3D Visualisation | 3Dmol.js (WebGL) |
 | AI Assistant | Groq Llama-3.3-70B |
-| Database | MongoDB |
+| Database | MongoDB Atlas |
 
 ---
 
