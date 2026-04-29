@@ -1,14 +1,5 @@
 """
-models/cnn_encoder.py
-
-Upgraded CNN encoder for molecular sequence → latent space.
-
-Architecture:
-  - Embedding → 4 dilated Conv1d blocks with residual connections
-  - Layer Norm + GELU (more stable gradients than ReLU)
-  - AdaptiveMaxPool + AdaptiveAvgPool (richer pooling)
-  - Two-layer MLP projection → mu, logvar
-  - logvar clamped to [-6, 2] (prevents NaN / extreme variance)
+CNN encoder for molecular sequence → latent space.
 """
 
 import torch
@@ -17,7 +8,7 @@ import torch.nn.functional as F
 
 
 class _ConvBlock(nn.Module):
-    """Dilated Conv1d → LayerNorm → GELU with residual."""
+
     def __init__(self, in_ch, out_ch, kernel_size, dilation=1):
         super().__init__()
         pad = (kernel_size - 1) * dilation // 2
